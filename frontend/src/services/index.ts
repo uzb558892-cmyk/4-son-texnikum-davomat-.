@@ -1,0 +1,9 @@
+export { isDemoMode } from './supabase';
+export { authService } from './authService';
+export { groupsService } from './groupsService';
+export { studentsService } from './studentsService';
+export { attendanceService } from './attendanceService';
+export { warningsService } from './warningsService';
+export { reportsService } from './reportsService';
+export { dashboardService } from './dashboardService';
+export { usersService } from './usersService';

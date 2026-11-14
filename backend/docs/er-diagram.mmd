@@ -1,0 +1,71 @@
+erDiagram
+    AUTH_USERS ||--o| PROFILES : "id"
+    PROFILES ||--o| GROUPS : "leader_id (1 rahbar = 1 guruh)"
+    GROUPS ||--o{ STUDENTS : "group_id"
+    STUDENTS ||--o{ ATTENDANCE : "student_id"
+    GROUPS ||--o{ ATTENDANCE : "group_id (yozuv paytidagi guruh)"
+    STUDENTS ||--o{ WARNING_LETTERS : "student_id"
+    PROFILES ||--o{ ATTENDANCE : "marked_by"
+    PROFILES ||--o{ WARNING_LETTERS : "handled_by"
+    ATTENDANCE ||--o{ ATTENDANCE_AUDIT : "attendance_id (FK siz)"
+    PROFILES ||--o{ SETTINGS : "updated_by"
+
+    PROFILES {
+        uuid id PK
+        user_role role "admin | group_leader"
+        text full_name
+        text phone
+        boolean is_active
+    }
+    GROUPS {
+        uuid id PK
+        text name UK
+        uuid leader_id UK
+        smallint paras_per_day "NULL = umumiy sozlama"
+        boolean is_active
+    }
+    STUDENTS {
+        uuid id PK
+        uuid group_id FK
+        text full_name
+        text student_code UK
+        text parent_name
+        text parent_phone
+        text parent_address
+        boolean is_active
+    }
+    ATTENDANCE {
+        uuid id PK
+        uuid student_id FK
+        uuid group_id FK
+        date lesson_date
+        smallint para "UK student+date+para"
+        attendance_status status
+        smallint academic_hours "snapshot"
+        boolean is_auto
+        smallint escaped_after_para
+        uuid marked_by FK
+    }
+    ATTENDANCE_AUDIT {
+        bigint id PK
+        uuid attendance_id
+        text action "insert | update | delete"
+        jsonb old_data
+        jsonb new_data
+        uuid changed_by
+        timestamptz changed_at
+    }
+    WARNING_LETTERS {
+        uuid id PK
+        uuid student_id FK
+        smallint level "UK student+level"
+        int unexcused_hours
+        int threshold_hours
+        warning_status status "draft | issued | sent"
+        text letter_text
+    }
+    SETTINGS {
+        text key PK
+        jsonb value
+        uuid updated_by FK
+    }
