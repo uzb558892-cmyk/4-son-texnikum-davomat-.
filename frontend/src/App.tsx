@@ -12,6 +12,7 @@ import Warnings from './pages/Warnings';
 import Reports from './pages/Reports';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
+import ParentPage from './pages/ParentPage';
 
 function Home() {
   const { user, loading } = useAuth();
@@ -24,6 +25,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/ota-ona" element={<ParentPage />} />
       <Route path="/" element={<Home />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
