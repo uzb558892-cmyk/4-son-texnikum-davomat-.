@@ -2,6 +2,14 @@ import type { Student } from '../types';
 import { db, isDemoMode } from './supabase';
 import { demoApi } from './demoData';
 
+export interface ParentCodeRow {
+  student_id: string;
+  full_name: string;
+  group_id: string;
+  group_name: string;
+  parent_code: string;
+}
+
 export const studentsService = {
   async list(groupId?: string): Promise<Student[]> {
     if (isDemoMode) return demoApi.students(groupId);
@@ -23,5 +31,11 @@ export const studentsService = {
     if (isDemoMode) { await demoApi.removeStudent(id); return; }
     const { error } = await db().from('students').delete().eq('id', id);
     if (error) throw error;
-  }
+  },
+  async parentCodes(groupId?: string): Promise<ParentCodeRow[]> {
+    if (isDemoMode) return [];
+    const { data, error } = await db().rpc('get_parent_codes', { p_group_id: groupId || null });
+    if (error) throw error;
+    return (data ?? []) as ParentCodeRow[];
+  },
 };
