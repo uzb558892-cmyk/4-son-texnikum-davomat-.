@@ -6,7 +6,7 @@ import Modal from './Modal';
 import Button from './Button';
 import { ErrorBox } from './Feedback';
 
-const BASE = window.location.origin + '/ota-ona?kod=';
+const BASE = 'https://4-son-texnikum-davomat.vercel.app/ota-ona?kod=';
 const link = (r: ParentCodeRow) => BASE + encodeURIComponent(r.parent_code);
 
 async function copyText(text: string): Promise<boolean> {
