@@ -2,6 +2,7 @@ import type { StudentWarning } from '../types';
 import { escapeHtml, formatDate, todayISO } from '../utils/format';
 import { STATUS_META } from '../utils/constants';
 import { exportWord, printHtml } from '../utils/export';
+import WarningCopyButton from './WarningCopyButton';
 import Button from './Button';
 
 /** Ogohlantirish xati HTML matni (backenddan kelgan soatlar ishlatiladi). */
@@ -33,6 +34,7 @@ export default function WarningLetter({ w }: { w: StudentWarning }) {
         <Button onClick={() => printHtml('Ogohlantirish xati', html)}>PDF yuklab olish</Button>
         <Button variant="secondary" onClick={() => exportWord(name, 'Ogohlantirish xati', html)}>Word yuklab olish</Button>
         <Button variant="secondary" onClick={() => printHtml('Ogohlantirish xati', html)}>Chop etish</Button>
+        <WarningCopyButton w={w} />
       </div>
       <p className="mt-2 text-xs text-slate-400">PDF uchun chop etish oynasida «PDF sifatida saqlash» ni tanlang.</p>
     </div>
