@@ -2,13 +2,21 @@ import type { Group } from '../types';
 import { db, isDemoMode } from './supabase';
 import { demoApi } from './demoData';
 
+// Guruh nomidagi raqam bo'yicha tartiblash: 36, 53, 54, 55, 56, 100 ...
+function sortGroups(list: Group[]): Group[] {
+  return [...list].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+  );
+}
+
 export const groupsService = {
   async list(): Promise<Group[]> {
-    if (isDemoMode) return demoApi.groups();
+    if (isDemoMode) return sortGroups(await demoApi.groups());
     const { data, error } = await db().from('groups_overview')
-      .select('id, name, course, leader_id, leader_name, student_count').order('name');
+      .select('id, name, course, leader_id, leader_name, student_count')
+      .order('name');
     if (error) throw error;
-    return (data ?? []) as Group[];
+    return sortGroups((data ?? []) as Group[]);
   },
   async save(g: { id?: string; name: string; course: number; leader_id?: string | null }): Promise<void> {
     if (isDemoMode) { await demoApi.saveGroup(g); return; }
