@@ -30,7 +30,7 @@ export default function DashboardView({ title, groupId, showGroups }: { title: s
       {error && <ErrorBox message={error} onRetry={reload} />}
       {data && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {showGroups && <StatCard label="Guruhlar" value={data.groups} icon={<Icon name="groups" />} tone="blue" />}
             <StatCard label="O'quvchilar" value={data.students} icon={<Icon name="student" />} tone="slate" />
             <StatCard label="Bugun keldi" value={data.present} hint="belgilangan paralar" icon={<Icon name="check" />} tone="green" />

@@ -15,27 +15,42 @@ export default function DataTable<T>({ columns, rows, rowKey, loading, empty = "
   const pages = Math.max(1, Math.ceil(rows.length / pageSize));
   useEffect(() => { if (page >= pages) setPage(0); }, [pages, page]);
   const slice = rows.slice(page * pageSize, page * pageSize + pageSize);
+  const message = loading ? 'Yuklanmoqda...' : slice.length === 0 ? empty : null;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-slate-50 text-slate-600">
-            <tr>{columns.map((c) => <th key={c.key} scope="col" className={`whitespace-nowrap px-4 py-3 font-semibold ${c.className ?? ''}`}>{c.header}</th>)}</tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {loading ? (
-              <tr><td colSpan={columns.length} className="px-4 py-10 text-center text-slate-400">Yuklanmoqda...</td></tr>
-            ) : slice.length === 0 ? (
-              <tr><td colSpan={columns.length} className="px-4 py-10 text-center text-slate-400">{empty}</td></tr>
-            ) : slice.map((r) => (
-              <tr key={rowKey(r)} className="hover:bg-slate-50/70">
-                {columns.map((c) => <td key={c.key} className={`px-4 py-3 ${c.className ?? ''}`}>{c.render(r)}</td>)}
-              </tr>
+    <div className="animate-fadeIn overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+      {message ? (
+        <div className="px-4 py-10 text-center text-sm text-slate-400">{message}</div>
+      ) : (
+        <>
+          <div className="divide-y divide-slate-100 sm:hidden">
+            {slice.map((r) => (
+              <div key={rowKey(r)} className="space-y-2 px-4 py-3">
+                {columns.map((c) => (
+                  <div key={c.key} className="flex items-start justify-between gap-3 text-sm">
+                    {c.header && <span className="shrink-0 text-xs font-medium uppercase tracking-wide text-slate-400">{c.header}</span>}
+                    <span className="ml-auto min-w-0 text-right text-slate-800">{c.render(r)}</span>
+                  </div>
+                ))}
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+          <div className="hidden overflow-x-auto sm:block">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="bg-slate-50 text-slate-500">
+                <tr>{columns.map((c) => <th key={c.key} scope="col" className={`whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide ${c.className ?? ''}`}>{c.header}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {slice.map((r) => (
+                  <tr key={rowKey(r)} className="transition-colors duration-150 hover:bg-brand-50/50">
+                    {columns.map((c) => <td key={c.key} className={`px-4 py-3 ${c.className ?? ''}`}>{c.render(r)}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
       {rows.length > pageSize && (
         <div className="flex items-center justify-between border-t border-slate-200 px-4 py-2.5 text-sm text-slate-500">
           <span>{page * pageSize + 1}–{Math.min(rows.length, (page + 1) * pageSize)} / {rows.length}</span>

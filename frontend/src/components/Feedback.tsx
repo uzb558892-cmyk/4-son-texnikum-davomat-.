@@ -9,7 +9,7 @@ export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () =
 
 export function Toast({ message, tone = 'ok' }: { message: string; tone?: 'ok' | 'err' }) {
   return (
-    <div role="status" className={`fixed bottom-4 right-4 z-[60] rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg ${tone === 'ok' ? 'bg-emerald-600' : 'bg-red-600'}`}>{message}</div>
+    <div role="status" className={`fixed bottom-24 left-4 right-4 z-[60] text-center sm:bottom-4 sm:left-auto sm:text-left rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg ${tone === 'ok' ? 'bg-emerald-600' : 'bg-red-600'}`}>{message}</div>
   );
 }
 

@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import Splash from './components/Splash';
 import AppLayout from './layouts/AppLayout';
 import { useAuth } from './context/AuthContext';
 import Login from './pages/Login';
@@ -16,7 +17,7 @@ import ParentPage from './pages/ParentPage';
 
 function Home() {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <Splash />;
   if (!user) return <Navigate to="/login" replace />;
   return <Navigate to={user.role === 'admin' ? '/admin' : '/guruh-rahbari'} replace />;
 }
