@@ -1,4 +1,4 @@
-import { db, isDemoMode } from './supabase';
+import { db } from './supabase';
 
 export interface ParentRecord {
   date: string;
@@ -18,7 +18,6 @@ export interface ParentView {
 
 export const parentService = {
   async get(code: string): Promise<ParentView | null> {
-    if (isDemoMode) return null;
     const { data, error } = await db().rpc('get_parent_view', { p_code: code });
     if (error) throw error;
     return (data ?? null) as ParentView | null;

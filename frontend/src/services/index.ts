@@ -1,4 +1,3 @@
-export { isDemoMode } from './supabase';
 export { authService } from './authService';
 export { groupsService } from './groupsService';
 export { studentsService } from './studentsService';

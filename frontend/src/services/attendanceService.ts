@@ -1,13 +1,11 @@
 import type { AttendanceRecord } from '../types';
-import { db, isDemoMode } from './supabase';
-import { demoApi } from './demoData';
+import { db } from './supabase';
 
 const toUiStatus = (s: string): AttendanceRecord['status'] =>
   s === 'excused_absent' ? 'excused' : s === 'unexcused_absent' ? 'unexcused' : s === 'escaped' ? 'skipped' : 'present';
 
 export const attendanceService = {
   async get(groupId: string, date: string, lesson: number): Promise<AttendanceRecord[]> {
-    if (isDemoMode) return demoApi.attendance(groupId, date, lesson);
     const { data, error } = await db().from('attendance')
       .select('id, student_id, group_id, lesson_date, para, status, escaped_after_para')
       .eq('group_id', groupId).eq('lesson_date', date).eq('para', lesson);
@@ -18,7 +16,6 @@ export const attendanceService = {
     })) as AttendanceRecord[];
   },
   async save(rows: AttendanceRecord[]): Promise<void> {
-    if (isDemoMode) { await demoApi.saveAttendance(rows); return; }
     const batches = new Map<number, Array<{ student_id: string; status: string; note: null }>>();
     for (const row of rows) {
       const para = row.status === 'skipped' ? (row.skip_after ?? row.lesson) : row.lesson;

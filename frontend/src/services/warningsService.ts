@@ -1,6 +1,5 @@
 import type { StudentWarning } from '../types';
-import { db, isDemoMode } from './supabase';
-import { demoApi } from './demoData';
+import { db } from './supabase';
 
 export const warningsService = {
   /**
@@ -8,7 +7,6 @@ export const warningsService = {
    * Frontend faqat tayyor natijani ko'rsatadi.
    */
   async list(groupId?: string): Promise<StudentWarning[]> {
-    if (isDemoMode) return demoApi.warnings(groupId);
     const { data, error } = await db().rpc('get_unexcused_warnings', { p_group_id: groupId ?? null });
     if (error) throw error;
     return (data ?? []) as StudentWarning[];

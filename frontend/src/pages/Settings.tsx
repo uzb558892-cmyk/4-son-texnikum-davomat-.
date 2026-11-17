@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { authService, isDemoMode } from '../services';
+import { authService } from '../services';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 import { Field, Input } from '../components/Fields';
@@ -16,7 +16,7 @@ export default function Settings() {
   if (!user) return null;
 
   async function change() {
-    if (pw.length < 8) return setMsg({ t: 'err', m: "Parol kamida 8 belgidan iborat bo'lsin." });
+    if (pw.length < 10) return setMsg({ t: 'err', m: "Parol kamida 10 belgidan iborat bo'lsin." });
     if (pw !== pw2) return setMsg({ t: 'err', m: 'Parollar mos kelmadi.' });
     setBusy(true);
     try { await authService.changePassword(pw); setPw(''); setPw2(''); setMsg({ t: 'ok', m: 'Parol yangilandi.' }); }
@@ -33,11 +33,11 @@ export default function Settings() {
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-2 font-semibold">Profil</h2>
           {row('F.I.Sh.', user.full_name)}{row('Email', user.email)}{row('Rol', ROLE_LABEL[user.role])}
-          {row("Ma'lumotlar manbai", isDemoMode ? 'DEMO (Supabase ulanmagan)' : 'Supabase')}
+          {row("Ma'lumotlar manbai", 'Supabase')}
         </section>
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-3 font-semibold">Parolni o'zgartirish</h2>
-          {isDemoMode ? <p className="text-sm text-slate-500">Demo rejimda parolni o'zgartirib bo'lmaydi.</p> : (
+          {(
             <div className="space-y-4">
               <Field label="Yangi parol"><Input type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} /></Field>
               <Field label="Parolni takrorlang"><Input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></Field>

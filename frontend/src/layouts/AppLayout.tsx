@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon';
-import DemoBanner from '../components/DemoBanner';
 import { useAuth } from '../context/AuthContext';
 import { APP_NAME, ROLE_LABEL } from '../utils/constants';
 import { cx } from '../utils/format';
@@ -55,7 +54,6 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-full flex-col">
-      <DemoBanner />
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-64 shrink-0 lg:block">{sidebar}</aside>
         {open && (

@@ -1,8 +1,5 @@
-import type { Profile, Role } from '../types';
-import { db, isDemoMode } from './supabase';
-import { demoApi } from './demoData';
-
-const DEMO_KEY = 'demo-user-id';
+import type { Profile } from '../types';
+import { db } from './supabase';
 
 async function fetchProfile(userId: string): Promise<Profile | null> {
   const client = db();
@@ -12,9 +9,10 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
   ]);
   if (error) throw error;
   if (!profile) return null;
-  const { data: group } = profile.role === 'group_leader'
+  const { data: group, error: groupError } = profile.role === 'group_leader'
     ? await client.from('groups').select('id').eq('leader_id', userId).maybeSingle()
-    : { data: null };
+    : { data: null, error: null };
+  if (groupError) throw groupError;
   return {
     ...(profile as Omit<Profile, 'email' | 'group_id'>),
     email: authData.user?.email ?? '',
@@ -24,10 +22,6 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
 
 export const authService = {
   async currentProfile(): Promise<Profile | null> {
-    if (isDemoMode) {
-      const id = sessionStorage.getItem(DEMO_KEY);
-      return id ? demoApi.profile(id) : null;
-    }
     const { data, error } = await db().auth.getSession();
     if (error) throw error;
     const uid = data.session?.user.id;
@@ -47,17 +41,10 @@ export const authService = {
     }
     return profile;
   },
-  signInDemo(role: Role): Profile {
-    const profile = demoApi.profile(role === 'admin' ? 'u1' : 'u2')!;
-    sessionStorage.setItem(DEMO_KEY, profile.id);
-    return profile;
-  },
   async signOut(): Promise<void> {
-    if (isDemoMode) sessionStorage.removeItem(DEMO_KEY);
-    else await db().auth.signOut();
+    await db().auth.signOut();
   },
   async changePassword(newPassword: string): Promise<void> {
-    if (isDemoMode) return;
     const { error } = await db().auth.updateUser({ password: newPassword });
     if (error) throw error;
   }
