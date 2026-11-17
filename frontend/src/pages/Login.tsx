@@ -31,8 +31,8 @@ export default function Login() {
   }
 
   return (
-    <div className="grid min-h-full lg:grid-cols-2">
-      <div className="relative flex flex-col justify-center overflow-hidden bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 px-6 pb-14 pt-10 text-white lg:p-14">
+    <div className="grid min-h-full grid-rows-[auto_1fr] lg:grid-cols-2 lg:grid-rows-1">
+      <div className="relative flex flex-col justify-center overflow-hidden bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 px-6 pb-16 pt-10 text-white lg:p-14">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-500/20 blur-3xl" aria-hidden />
         <div className="relative flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-brand-700 shadow-card"><Icon name="check" className="h-6 w-6" /></span>
@@ -50,7 +50,7 @@ export default function Login() {
       </div>
 
       <div className="flex flex-1 items-start justify-center bg-surface px-4 py-0 lg:items-center lg:py-8">
-        <form onSubmit={submit} className="-mt-8 w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-card-hover lg:mt-0">
+        <form onSubmit={submit} className="relative z-10 -mt-8 w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-card-hover lg:mt-0">
           <div>
             <h1 className="text-xl font-bold text-slate-900">Tizimga kirish</h1>
             <p className="mt-1 text-sm text-slate-500">Hisobingiz ma'lumotlarini kiriting</p>
