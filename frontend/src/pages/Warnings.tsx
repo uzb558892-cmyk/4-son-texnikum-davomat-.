@@ -17,8 +17,8 @@ const Flag = () => <span className="inline-flex h-6 w-6 items-center justify-cen
 
 export default function Warnings() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
-  const [groupId, setGroupId] = useState(isAdmin ? '' : user?.group_id ?? '');
+  const seeAll = user?.role !== 'group_leader';
+  const [groupId, setGroupId] = useState(seeAll ? '' : user?.group_id ?? '');
   const [q, setQ] = useState('');
   const [detail, setDetail] = useState<StudentWarning | null>(null);
   const [letter, setLetter] = useState<StudentWarning | null>(null);
@@ -43,7 +43,7 @@ export default function Warnings() {
       <PageHeader title="Ogohlantirishlar" subtitle="72 soatdan ortiq darsni uzrsiz qoldirgan o'quvchilar (hisob-kitob serverda bajariladi)"
         actions={<>
           <SearchInput value={q} onChange={setQ} placeholder="O'quvchi qidirish..." />
-          {isAdmin && <Select aria-label="Guruh" className="sm:w-44" value={groupId} onChange={(e) => setGroupId(e.target.value)}><option value="">Barcha guruhlar</option>{(groups.data ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</Select>}
+          {seeAll && <Select aria-label="Guruh" className="sm:w-44" value={groupId} onChange={(e) => setGroupId(e.target.value)}><option value="">Barcha guruhlar</option>{(groups.data ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</Select>}
         </>} />
       {!warnings.loading && rows.length > 0 && (
         <div role="alert" className="mb-4 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><Flag />{rows.length} nafar o'quvchi chegaradan oshgan.</div>

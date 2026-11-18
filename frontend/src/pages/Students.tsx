@@ -16,7 +16,9 @@ import type { Student } from '../types';
 export default function Students() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const [groupId, setGroupId] = useState(isAdmin ? '' : user?.group_id ?? '');
+  const seeAll = user?.role !== 'group_leader';
+  const canCodes = user?.role === 'admin' || user?.role === 'group_leader';
+  const [groupId, setGroupId] = useState(seeAll ? '' : user?.group_id ?? '');
   const [q, setQ] = useState('');
   const dq = useDebounce(q);
   const groups = useAsync(() => groupsService.list(), []);
@@ -55,13 +57,13 @@ export default function Students() {
       <PageHeader title="O'quvchilar" subtitle={`Jami: ${rows.length} ta`}
         actions={<>
           <SearchInput value={q} onChange={setQ} placeholder="F.I.Sh. bo'yicha qidirish..." />
-          {isAdmin && (
+          {seeAll && (
             <Select aria-label="Guruh" value={groupId} onChange={(e) => setGroupId(e.target.value)} className="sm:w-44">
               <option value="">Barcha guruhlar</option>
               {(groups.data ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </Select>
           )}
-          <Button variant="secondary" onClick={() => setShowCodes(true)}>Ota-ona kodlari</Button>
+          {canCodes && <Button variant="secondary" onClick={() => setShowCodes(true)}>Ota-ona kodlari</Button>}
           {isAdmin && <Button onClick={() => setEdit({ group_id: groupId || groups.data?.[0]?.id })}>+ O'quvchi qo'shish</Button>}
         </>} />
       {students.error && <ErrorBox message={students.error} onRetry={students.reload} />}

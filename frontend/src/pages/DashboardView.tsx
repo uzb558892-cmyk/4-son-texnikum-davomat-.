@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { dashboardService } from '../services';
 import { useAsync } from '../hooks/useAsync';
 import StatCard from '../components/StatCard';
@@ -11,6 +12,7 @@ import { formatDate, percent, todayISO } from '../utils/format';
 import type { GroupToday } from '../types';
 
 export default function DashboardView({ title, groupId, showGroups }: { title: string; groupId?: string; showGroups: boolean }) {
+  const { user } = useAuth();
   const { data, loading, error, reload } = useAsync(() => dashboardService.stats(groupId), [groupId]);
   if (loading && !data) return <Spinner />;
 
@@ -26,7 +28,7 @@ export default function DashboardView({ title, groupId, showGroups }: { title: s
   return (
     <>
       <PageHeader title={title} subtitle={`Bugun: ${formatDate(todayISO())}`}
-        actions={<Link to="/davomat"><Button>Davomat belgilash</Button></Link>} />
+        actions={user?.role === 'manaviyatchi' ? <></> : <Link to="/davomat"><Button>Davomat belgilash</Button></Link>} />
       {error && <ErrorBox message={error} onRetry={reload} />}
       {data && (
         <>

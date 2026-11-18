@@ -16,11 +16,11 @@ import type { ReportGroupBy, ReportPeriod, ReportRow } from '../types';
 
 export default function Reports() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const seeAll = user?.role !== 'group_leader';
   const [period, setPeriod] = useState<ReportPeriod>('monthly');
   const [date, setDate] = useState(todayISO());
-  const [groupBy, setGroupBy] = useState<ReportGroupBy>(isAdmin ? 'group' : 'student');
-  const [groupId, setGroupId] = useState(isAdmin ? '' : user?.group_id ?? '');
+  const [groupBy, setGroupBy] = useState<ReportGroupBy>(seeAll ? 'group' : 'student');
+  const [groupId, setGroupId] = useState(seeAll ? '' : user?.group_id ?? '');
   const groups = useAsync(() => groupsService.list(), []);
   const report = useAsync(() => reportsService.get({ period, date, groupBy, groupId: groupId || undefined }), [period, date, groupBy, groupId]);
 
@@ -56,7 +56,7 @@ export default function Reports() {
         <Field label="Davr"><Select value={period} onChange={(e) => setPeriod(e.target.value as ReportPeriod)}>{(Object.keys(PERIOD_LABEL) as ReportPeriod[]).map((p) => <option key={p} value={p}>{PERIOD_LABEL[p]}</option>)}</Select></Field>
         <Field label="Sana"><Input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></Field>
         <Field label="Kesim"><Select value={groupBy} onChange={(e) => setGroupBy(e.target.value as ReportGroupBy)}><option value="group">Guruh bo'yicha</option><option value="student">O'quvchi bo'yicha</option></Select></Field>
-        <Field label="Guruh"><Select value={groupId} disabled={!isAdmin} onChange={(e) => setGroupId(e.target.value)}>{isAdmin && <option value="">Barcha guruhlar</option>}{(groups.data ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</Select></Field>
+        <Field label="Guruh"><Select value={groupId} disabled={!seeAll} onChange={(e) => setGroupId(e.target.value)}>{seeAll && <option value="">Barcha guruhlar</option>}{(groups.data ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</Select></Field>
       </div>
       <div className="mb-4 grid gap-4 sm:grid-cols-3">
         <StatCard label="Sababli qoldirilgan soat" value={sum('excused_hours')} icon={<Icon name="report" />} tone="amber" />

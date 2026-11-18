@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { attendanceService, groupsService, studentsService } from '../services';
+import { dutyService, todayTashkent, type DutyRow } from '../services/dutyService';
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
@@ -12,12 +13,16 @@ import type { AttendanceRecord, AttendanceStatus, SkipAfter } from '../types';
 
 interface Mark { status: AttendanceStatus; skip_after: SkipAfter | null }
 
+const BOX = 'mb-4 rounded-lg border px-4 py-3 text-sm font-medium';
+
 export default function Attendance() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
-  const [date, setDate] = useState(todayISO());
+  const role = user?.role;
+  const seeAll = role !== 'group_leader';
+  const isDuty = role === 'navbatchi';
+  const [date, setDate] = useState(isDuty ? todayTashkent() : todayISO());
   const [lesson, setLesson] = useState(1);
-  const [groupId, setGroupId] = useState(isAdmin ? '' : user?.group_id ?? '');
+  const [groupId, setGroupId] = useState(seeAll ? '' : user?.group_id ?? '');
   const [q, setQ] = useState('');
   const [marks, setMarks] = useState<Record<string, Mark>>({});
   const [saving, setSaving] = useState(false);
@@ -25,7 +30,11 @@ export default function Attendance() {
   const notify = (m: string, t: 'ok' | 'err' = 'ok') => { setToast({ m, t }); setTimeout(() => setToast(null), 2500); };
 
   const groups = useAsync(() => groupsService.list(), []);
+  const duty = useAsync(() => (isDuty ? dutyService.list(todayTashkent().slice(0, 7)) : Promise.resolve([] as DutyRow[])), [isDuty]);
   useEffect(() => { if (!groupId && groups.data?.length) setGroupId(groups.data[0].id); }, [groups.data, groupId]);
+
+  const meOnDuty = !!user && (duty.data ?? []).some((r) => r.duty_date === todayTashkent() && r.duty_user_id === user.id);
+  const canEdit = role === 'admin' || role === 'group_leader' || (isDuty && meOnDuty);
 
   const students = useAsync(() => (groupId ? studentsService.list(groupId) : Promise.resolve([])), [groupId]);
   const existing = useAsync(() => (groupId ? attendanceService.get(groupId, date, lesson) : Promise.resolve([])), [groupId, date, lesson]);
@@ -40,12 +49,21 @@ export default function Attendance() {
   const total = students.data?.length ?? 0;
   const marked = (students.data ?? []).filter((s) => marks[s.id]).length;
 
-  const set = (id: string, status: AttendanceStatus) =>
+  const set = (id: string, status: AttendanceStatus) => {
+    if (!canEdit) return;
     setMarks((m) => ({ ...m, [id]: { status, skip_after: status === 'skipped' ? m[id]?.skip_after ?? 1 : null } }));
-  const setSkip = (id: string, n: SkipAfter) => setMarks((m) => ({ ...m, [id]: { status: 'skipped', skip_after: n } }));
-  const allPresent = () => setMarks(Object.fromEntries((students.data ?? []).map((s) => [s.id, { status: 'present' as const, skip_after: null }])));
+  };
+  const setSkip = (id: string, n: SkipAfter) => {
+    if (!canEdit) return;
+    setMarks((m) => ({ ...m, [id]: { status: 'skipped', skip_after: n } }));
+  };
+  const allPresent = () => {
+    if (!canEdit) return;
+    setMarks(Object.fromEntries((students.data ?? []).map((s) => [s.id, { status: 'present' as const, skip_after: null }])));
+  };
 
   async function save() {
+    if (!canEdit) return;
     const rows: AttendanceRecord[] = (students.data ?? []).filter((s) => marks[s.id]).map((s) => ({
       student_id: s.id, group_id: groupId, date, lesson, status: marks[s.id].status, skip_after: marks[s.id].skip_after
     }));
@@ -57,14 +75,19 @@ export default function Attendance() {
   }
 
   const counts = STATUS_ORDER.map((s) => ({ s, n: (Object.values(marks) as Mark[]).filter((m) => m.status === s).length }));
+  const dutyReady = isDuty && !duty.loading && !duty.error;
 
   return (
     <>
-      <PageHeader title="Davomat" subtitle="Sana, guruh va parani tanlab, o'quvchilarni belgilang" />
+      <PageHeader title="Davomat" subtitle={canEdit ? "Sana, guruh va parani tanlab, o'quvchilarni belgilang" : "Davomatni ko'rish"} />
+      {dutyReady && (meOnDuty
+        ? <div className={`${BOX} border-emerald-200 bg-emerald-50 text-emerald-800`}>Bugun sizning navbatchilik kuningiz. Davomat belgilashingiz mumkin.</div>
+        : <div className={`${BOX} border-amber-200 bg-amber-50 text-amber-800`}>Bugun sizning navbatchilik kuningiz emas. Davomatni faqat ko'rishingiz mumkin.</div>)}
+      {role === 'manaviyatchi' && <div className={`${BOX} border-slate-200 bg-white text-slate-700`}>Siz davomatni faqat ko'ra olasiz.</div>}
       <div className="mb-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
-        <Field label="Sana"><Input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></Field>
+        <Field label="Sana"><Input type="date" value={date} disabled={isDuty} onChange={(e) => e.target.value && setDate(e.target.value)} /></Field>
         <Field label="Guruh">
-          <Select value={groupId} disabled={!isAdmin} onChange={(e) => setGroupId(e.target.value)}>
+          <Select value={groupId} disabled={!seeAll} onChange={(e) => setGroupId(e.target.value)}>
             {(groups.data ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </Select>
         </Field>
@@ -74,15 +97,17 @@ export default function Attendance() {
         <Field label="O'quvchi qidirish"><SearchInput value={q} onChange={setQ} placeholder="F.I.Sh." /></Field>
       </div>
 
-      {(students.error || existing.error) && <ErrorBox message={(students.error || existing.error) as string} onRetry={() => { students.reload(); existing.reload(); }} />}
+      {(students.error || existing.error || duty.error) && <ErrorBox message={(students.error || existing.error || duty.error) as string} onRetry={() => { students.reload(); existing.reload(); duty.reload(); }} />}
 
       <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
         {counts.map(({ s, n }) => <span key={s} className={`rounded-full px-2.5 py-1 font-medium ring-1 ring-inset ${STATUS_META[s].badge}`}>{STATUS_META[s].label}: {n}</span>)}
         <span className="text-slate-500">Belgilandi: {marked} / {total}</span>
-        <div className="ml-auto flex gap-2">
-          <Button variant="secondary" onClick={allPresent} disabled={!total}>Hammasi keldi</Button>
-          <Button onClick={save} disabled={saving || marked === 0}>{saving ? 'Saqlanmoqda...' : 'Saqlash'}</Button>
-        </div>
+        {canEdit && (
+          <div className="ml-auto flex gap-2">
+            <Button variant="secondary" onClick={allPresent} disabled={!total}>Hammasi keldi</Button>
+            <Button onClick={save} disabled={saving || marked === 0}>{saving ? 'Saqlanmoqda...' : 'Saqlash'}</Button>
+          </div>
+        )}
       </div>
 
       <ul className="space-y-2">
@@ -100,8 +125,8 @@ export default function Attendance() {
                   </div>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {STATUS_ORDER.map((st) => (
-                      <button key={st} onClick={() => set(s.id, st)} aria-pressed={m?.status === st}
-                        className={cx('rounded-lg border px-3 py-2 text-xs font-semibold transition-colors', m?.status === st ? STATUS_META[st].active : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50')}>
+                      <button key={st} onClick={() => set(s.id, st)} disabled={!canEdit} aria-pressed={m?.status === st}
+                        className={cx('rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60', m?.status === st ? STATUS_META[st].active : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50')}>
                         {STATUS_META[st].label}
                       </button>
                     ))}
@@ -111,8 +136,8 @@ export default function Attendance() {
                   <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-violet-50 px-3 py-2 text-sm text-violet-800">
                     <span className="font-medium">Qachon qochdi:</span>
                     {([1, 2, 3] as SkipAfter[]).map((n) => (
-                      <button key={n} onClick={() => setSkip(s.id, n)} aria-pressed={m.skip_after === n}
-                        className={cx('rounded-md border px-3 py-1 text-xs font-semibold', m.skip_after === n ? 'border-violet-600 bg-violet-600 text-white' : 'border-violet-300 bg-white text-violet-700')}>
+                      <button key={n} onClick={() => setSkip(s.id, n)} disabled={!canEdit} aria-pressed={m.skip_after === n}
+                        className={cx('rounded-md border px-3 py-1 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60', m.skip_after === n ? 'border-violet-600 bg-violet-600 text-white' : 'border-violet-300 bg-white text-violet-700')}>
                         {n}-paradan keyin
                       </button>
                     ))}

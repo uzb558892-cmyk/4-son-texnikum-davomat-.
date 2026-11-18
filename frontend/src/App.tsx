@@ -14,12 +14,21 @@ import Reports from './pages/Reports';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 import ParentPage from './pages/ParentPage';
+import DutySchedule from './pages/DutySchedule';
+import type { Role } from './types';
+
+const HOME: Record<Role, string> = {
+  admin: '/admin',
+  manaviyatchi: '/admin',
+  group_leader: '/guruh-rahbari',
+  navbatchi: '/navbatchi'
+};
 
 function Home() {
   const { user, loading } = useAuth();
   if (loading) return <Splash />;
   if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={user.role === 'admin' ? '/admin' : '/guruh-rahbari'} replace />;
+  return <Navigate to={HOME[user.role] ?? '/guruh-rahbari'} replace />;
 }
 
 export default function App() {
@@ -36,12 +45,18 @@ export default function App() {
           <Route path="/ogohlantirishlar" element={<Warnings />} />
           <Route path="/hisobotlar" element={<Reports />} />
           <Route path="/sozlamalar" element={<Settings />} />
-          <Route element={<ProtectedRoute roles={['admin']} />}>
+          <Route element={<ProtectedRoute roles={['admin', 'manaviyatchi']} />}>
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/navbatchilar" element={<DutySchedule />} />
+          </Route>
+          <Route element={<ProtectedRoute roles={['admin']} />}>
             <Route path="/foydalanuvchilar" element={<Users />} />
           </Route>
           <Route element={<ProtectedRoute roles={['group_leader']} />}>
             <Route path="/guruh-rahbari" element={<LeaderDashboard />} />
+          </Route>
+          <Route element={<ProtectedRoute roles={['navbatchi']} />}>
+            <Route path="/navbatchi" element={<DutySchedule />} />
           </Route>
         </Route>
       </Route>

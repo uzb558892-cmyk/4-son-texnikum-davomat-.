@@ -22,4 +22,9 @@ export const PERIOD_LABEL: Record<ReportPeriod, string> = {
   yearly: 'Yillik'
 };
 
-export const ROLE_LABEL = { admin: 'Administrator', group_leader: 'Guruh rahbari' } as const;
+export const ROLE_LABEL = {
+  admin: 'Administrator',
+  group_leader: 'Guruh rahbari',
+  manaviyatchi: "Ma'naviyatchi",
+  navbatchi: 'Navbatchi'
+} as const;

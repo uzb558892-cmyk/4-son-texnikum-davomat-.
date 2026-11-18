@@ -49,7 +49,7 @@ export default function Groups() {
 
   return (
     <>
-      <PageHeader title="Guruhlar" subtitle={isAdmin ? 'Barcha guruhlar ro\'yxati' : "Sizning guruhingiz"}
+      <PageHeader title="Guruhlar" subtitle={user?.role !== 'group_leader' ? 'Barcha guruhlar ro\'yxati' : "Sizning guruhingiz"}
         actions={<>
           <SearchInput value={q} onChange={setQ} placeholder="Guruh qidirish..." />
           {isAdmin && <Button onClick={() => setEdit({ course: 1 })}>+ Guruh qo'shish</Button>}

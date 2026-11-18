@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
 
   const [{ data: profiles, error: profileErr }, { data: groups, error: groupErr }, { data: users, error: usersErr }] =
     await Promise.all([
-      svc.from("profiles").select("id,full_name,role,is_active,phone").order("full_name"),
+      svc.from("profiles").select("id,full_name,role,is_active,phone,is_primary,job_title").order("full_name"),
       svc.from("groups").select("id,name,leader_id"),
       svc.auth.admin.listUsers({ page: 1, perPage: 1000 })
     ]);
