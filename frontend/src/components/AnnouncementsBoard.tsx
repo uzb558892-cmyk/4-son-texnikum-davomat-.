@@ -278,7 +278,7 @@ export default function AnnouncementsBoard() {
               <Textarea
                 rows={4}
                 value={body}
-                onChange={(e) => setBody(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBody(e.target.value)}
                 placeholder="E'lon mazmunini batafsil yozing..."
                 required
               />
@@ -323,7 +323,7 @@ export default function AnnouncementsBoard() {
               <Textarea
                 rows={4}
                 value={editBody}
-                onChange={(e) => setEditBody(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditBody(e.target.value)}
                 required
               />
             </Field>

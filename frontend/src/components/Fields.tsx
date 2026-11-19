@@ -28,3 +28,13 @@ export function SearchInput({ value, onChange, placeholder = 'Qidirish...' }: { 
     </div>
   );
 }
+
+export function Textarea({ rows = 4, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      rows={rows}
+      {...props}
+      className={`w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200 ${props.className ?? ''}`}
+    />
+  );
+}
