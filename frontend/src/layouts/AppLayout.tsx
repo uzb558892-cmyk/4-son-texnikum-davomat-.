@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon';
 import { useAuth } from '../context/AuthContext';
+import { useAsync } from '../hooks/useAsync';
+import { dutyService, todayTashkent, type DutyRow } from '../services/dutyService';
 import { APP_NAME, ROLE_LABEL } from '../utils/constants';
 import { cx } from '../utils/format';
 import type { Role } from '../types';
@@ -14,6 +16,7 @@ const NAV: NavItem[] = [
   { to: '/admin', label: 'Bosh sahifa', icon: 'home', roles: ['admin', 'manaviyatchi'] },
   { to: '/guruh-rahbari', label: 'Bosh sahifa', icon: 'home', roles: ['group_leader'] },
   { to: '/navbatchi', label: 'Bosh sahifa', icon: 'home', roles: ['navbatchi'] },
+  { to: '/davomat-belgilash', label: 'Davomat belgilash', short: 'Belgilash', icon: 'check', roles: ['admin', 'navbatchi'] },
   { to: '/guruhlar', label: 'Guruhlar', icon: 'groups', roles: ALL },
   { to: '/oquvchilar', label: "O'quvchilar", icon: 'student', roles: ALL },
   { to: '/davomat', label: 'Davomat', icon: 'check', roles: ALL },
@@ -30,8 +33,24 @@ export default function AppLayout() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+
+  const isDuty = user?.role === 'navbatchi';
+  const today = todayTashkent();
+  const duty = useAsync(
+    () => (isDuty ? dutyService.list(today.slice(0, 7)) : Promise.resolve([] as DutyRow[])),
+    [isDuty, today]
+  );
+
   if (!user) return null;
-  const items = NAV.filter((n) => n.roles.includes(user.role));
+
+  const meOnDutyToday =
+    isDuty && (duty.data ?? []).some((r) => r.duty_date === today && r.duty_user_id === user.id);
+
+  const items = NAV.filter((n) => {
+    if (!n.roles.includes(user.role)) return false;
+    if (n.to === '/davomat-belgilash' && isDuty) return meOnDutyToday;
+    return true;
+  });
   const bottomItems = items.filter((n) => BOTTOM.includes(n.to));
 
   const sidebar = (

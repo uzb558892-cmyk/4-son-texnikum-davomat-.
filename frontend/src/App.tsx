@@ -9,6 +9,7 @@ import LeaderDashboard from './pages/LeaderDashboard';
 import Groups from './pages/Groups';
 import Students from './pages/Students';
 import Attendance from './pages/Attendance';
+import QuickAttendance from './pages/QuickAttendance';
 import Warnings from './pages/Warnings';
 import Reports from './pages/Reports';
 import Users from './pages/Users';
@@ -45,6 +46,9 @@ export default function App() {
           <Route path="/ogohlantirishlar" element={<Warnings />} />
           <Route path="/hisobotlar" element={<Reports />} />
           <Route path="/sozlamalar" element={<Settings />} />
+          <Route element={<ProtectedRoute roles={['admin', 'navbatchi']} />}>
+            <Route path="/davomat-belgilash" element={<QuickAttendance />} />
+          </Route>
           <Route element={<ProtectedRoute roles={['admin', 'manaviyatchi']} />}>
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/navbatchilar" element={<DutySchedule />} />
