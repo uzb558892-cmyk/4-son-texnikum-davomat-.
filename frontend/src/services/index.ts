@@ -6,3 +6,4 @@ export { warningsService } from './warningsService';
 export { reportsService } from './reportsService';
 export { dashboardService } from './dashboardService';
 export { usersService } from './usersService';
+export { announcementsService } from './announcementsService';

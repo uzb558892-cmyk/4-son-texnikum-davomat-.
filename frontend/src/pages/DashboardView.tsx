@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { dashboardService } from '../services';
 import { useAsync } from '../hooks/useAsync';
+import AnnouncementsBoard from '../components/AnnouncementsBoard';
 import StatCard from '../components/StatCard';
 import PageHeader from '../components/PageHeader';
 import DataTable, { type Column } from '../components/DataTable';
@@ -27,6 +28,7 @@ export default function DashboardView({ title, groupId, showGroups }: { title: s
 
   return (
     <>
+      <AnnouncementsBoard />
       <PageHeader title={title} subtitle={`Bugun: ${formatDate(todayISO())}`}
         actions={user?.role === 'manaviyatchi' ? <></> : <Link to="/davomat"><Button>Davomat belgilash</Button></Link>} />
       {error && <ErrorBox message={error} onRetry={reload} />}

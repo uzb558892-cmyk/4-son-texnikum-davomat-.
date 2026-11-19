@@ -111,3 +111,28 @@ export interface NewUserInput {
   role: Role;
   group_id: string | null;
 }
+
+export interface Announcement {
+  id: string;
+  author_id: string;
+  author_name: string;
+  author_role: Role | string;
+  title: string;
+  body: string;
+  image_urls: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NewAnnouncementInput {
+  title: string;
+  body: string;
+  files?: File[];
+}
+
+export interface UpdateAnnouncementInput {
+  title: string;
+  body: string;
+  existingImageUrls: string[];
+  newFiles?: File[];
+}
