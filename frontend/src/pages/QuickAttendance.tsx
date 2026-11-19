@@ -17,7 +17,7 @@ export default function QuickAttendance() {
   const { user } = useAuth();
   const role = user?.role;
   const isAdmin = role === 'admin';
-  const isDuty = role === 'navbatchi';
+  const canCheckDuty = role === 'navbatchi' || role === 'group_leader';
   const today = todayTashkent();
 
   const [date, setDate] = useState(today);
@@ -35,18 +35,18 @@ export default function QuickAttendance() {
 
   const groups = useAsync(() => groupsService.list(), []);
   const duty = useAsync(
-    () => (isDuty ? dutyService.list(today.slice(0, 7)) : Promise.resolve([] as DutyRow[])),
-    [isDuty, today]
+    () => (canCheckDuty ? dutyService.list(today.slice(0, 7)) : Promise.resolve([] as DutyRow[])),
+    [canCheckDuty, today]
   );
 
   useEffect(() => {
     if (!groupId && groups.data?.length) setGroupId(groups.data[0].id);
   }, [groups.data, groupId]);
 
-  const dutyReady = isAdmin || (isDuty && !duty.loading && !duty.error);
+  const dutyReady = isAdmin || (canCheckDuty && !duty.loading && !duty.error);
   const meOnDutyToday =
     !!user && (duty.data ?? []).some((r) => r.duty_date === today && r.duty_user_id === user.id);
-  const allowed = isAdmin || (isDuty && meOnDutyToday);
+  const allowed = isAdmin || (canCheckDuty && meOnDutyToday);
 
   const students = useAsync(
     () => (allowed && groupId ? studentsService.list(groupId) : Promise.resolve([])),

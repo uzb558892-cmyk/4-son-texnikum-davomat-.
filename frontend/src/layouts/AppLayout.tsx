@@ -16,7 +16,7 @@ const NAV: NavItem[] = [
   { to: '/admin', label: 'Bosh sahifa', icon: 'home', roles: ['admin', 'manaviyatchi'] },
   { to: '/guruh-rahbari', label: 'Bosh sahifa', icon: 'home', roles: ['group_leader'] },
   { to: '/navbatchi', label: 'Bosh sahifa', icon: 'home', roles: ['navbatchi'] },
-  { to: '/davomat-belgilash', label: 'Davomat belgilash', short: 'Belgilash', icon: 'check', roles: ['admin', 'navbatchi'] },
+  { to: '/davomat-belgilash', label: 'Davomat belgilash', short: 'Belgilash', icon: 'check', roles: ['admin', 'navbatchi', 'group_leader'] },
   { to: '/guruhlar', label: 'Guruhlar', icon: 'groups', roles: ALL },
   { to: '/oquvchilar', label: "O'quvchilar", icon: 'student', roles: ALL },
   { to: '/davomat', label: 'Davomat', icon: 'check', roles: ALL },
@@ -35,20 +35,21 @@ export default function AppLayout() {
   const [open, setOpen] = useState(false);
 
   const isDuty = user?.role === 'navbatchi';
+  const canCheckDuty = user?.role === 'navbatchi' || user?.role === 'group_leader';
   const today = todayTashkent();
   const duty = useAsync(
-    () => (isDuty ? dutyService.list(today.slice(0, 7)) : Promise.resolve([] as DutyRow[])),
-    [isDuty, today]
+    () => (canCheckDuty ? dutyService.list(today.slice(0, 7)) : Promise.resolve([] as DutyRow[])),
+    [canCheckDuty, today]
   );
 
   if (!user) return null;
 
   const meOnDutyToday =
-    isDuty && (duty.data ?? []).some((r) => r.duty_date === today && r.duty_user_id === user.id);
+    canCheckDuty && (duty.data ?? []).some((r) => r.duty_date === today && r.duty_user_id === user.id);
 
   const items = NAV.filter((n) => {
     if (!n.roles.includes(user.role)) return false;
-    if (n.to === '/davomat-belgilash' && isDuty) return meOnDutyToday;
+    if (n.to === '/davomat-belgilash' && user?.role !== 'admin') return meOnDutyToday;
     return true;
   });
   const bottomItems = items.filter((n) => BOTTOM.includes(n.to));
