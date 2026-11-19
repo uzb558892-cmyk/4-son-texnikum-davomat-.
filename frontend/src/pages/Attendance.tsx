@@ -74,7 +74,8 @@ export default function Attendance() {
     finally { setSaving(false); }
   }
 
-  const counts = STATUS_ORDER.map((s) => ({ s, n: (Object.values(marks) as Mark[]).filter((m) => m.status === s).length }));
+  const visibleStatuses = role === 'group_leader' ? STATUS_ORDER.filter((st) => st !== 'present' && st !== 'skipped') : STATUS_ORDER;
+  const counts = visibleStatuses.map((s) => ({ s, n: (Object.values(marks) as Mark[]).filter((m) => m.status === s).length }));
   const dutyReady = isDuty && !duty.loading && !duty.error;
 
   return (
@@ -123,8 +124,8 @@ export default function Attendance() {
                     <span className={cx('h-8 w-1 rounded-full', m ? STATUS_META[m.status].dot : 'bg-slate-200')} />
                     <span className="truncate font-semibold">{s.full_name}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {STATUS_ORDER.map((st) => (
+                  <div className={cx('grid grid-cols-2 gap-2', role === 'group_leader' ? 'sm:grid-cols-2' : 'sm:grid-cols-4')}>
+                    {visibleStatuses.map((st) => (
                       <button key={st} onClick={() => set(s.id, st)} disabled={!canEdit} aria-pressed={m?.status === st}
                         className={cx('rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60', m?.status === st ? STATUS_META[st].active : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50')}>
                         {STATUS_META[st].label}
