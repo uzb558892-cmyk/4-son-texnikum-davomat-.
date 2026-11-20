@@ -17,6 +17,29 @@ import type { ReportGroupBy, ReportPeriod, ReportRow } from '../types';
 
 type DayMark = '+' | '-' | '·';
 
+interface SlotCol {
+  key: string;
+  label: string;
+}
+
+const WEEKDAY_LABELS = ['Du', 'Se', 'Cho', 'Pa', 'Ju', 'Sha', 'Ya'];
+const MONTH_LABELS = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
+
+function toIsoLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getMondayDate(isoDate: string): Date {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const dt = new Date(y || 2026, (m || 1) - 1, d || 1);
+  const diff = (dt.getDay() + 6) % 7; // Monday = 0
+  dt.setDate(dt.getDate() - diff);
+  return dt;
+}
+
 export default function Reports() {
   const { user } = useAuth();
   const seeAll = user?.role !== 'group_leader';
@@ -24,7 +47,8 @@ export default function Reports() {
   const [date, setDate] = useState(todayISO());
   const [groupBy, setGroupBy] = useState<ReportGroupBy>(seeAll ? 'group' : 'student');
   const [groupId, setGroupId] = useState(seeAll ? '' : user?.group_id ?? '');
-  const [dayMatrix, setDayMatrix] = useState<Record<string, Record<number, DayMark>>>({});
+  const [slotMatrix, setSlotMatrix] = useState<Record<string, Record<string, DayMark>>>({});
+  const [dailyParas, setDailyParas] = useState<number[]>([1, 2, 3]);
 
   const groups = useAsync(() => groupsService.list(), []);
   const report = useAsync(
@@ -32,40 +56,42 @@ export default function Reports() {
     [period, date, groupBy, groupId]
   );
 
-  const isMonthlyStudent = period === 'monthly' && groupBy === 'student';
+  const isStudentView = groupBy === 'student';
   const [yearStr, monthStr] = date.split('-');
   const yearNum = Number(yearStr) || new Date().getFullYear();
   const monthNum = Number(monthStr) || new Date().getMonth() + 1;
   const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
-  const dayNumbers = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const monday = getMondayDate(date);
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const dt = new Date(monday);
+    dt.setDate(monday.getDate() + i);
+    return {
+      iso: toIsoLocal(dt),
+      short: `${WEEKDAY_LABELS[i]} (${dt.getDate()})`
+    };
+  });
+
+  const slotCols: SlotCol[] = !isStudentView
+    ? []
+    : period === 'daily'
+    ? dailyParas.map((p) => ({ key: `p_${p}`, label: `${p}-para` }))
+    : period === 'weekly'
+    ? weekDays.map((w) => ({ key: `w_${w.iso}`, label: w.short }))
+    : period === 'monthly'
+    ? Array.from({ length: daysInMonth }, (_, i) => ({ key: `d_${i + 1}`, label: String(i + 1) }))
+    : MONTH_LABELS.map((mLabel, idx) => ({ key: `m_${idx + 1}`, label: mLabel }));
 
   useEffect(() => {
     let cancelled = false;
-    if (!isMonthlyStudent) {
-      setDayMatrix({});
+    if (!isStudentView) {
+      setSlotMatrix({});
       return;
     }
-
-    const ym = `${String(yearNum).padStart(4, '0')}-${String(monthNum).padStart(2, '0')}`;
-    const fromDate = `${ym}-01`;
-    const toDate = `${ym}-${String(daysInMonth).padStart(2, '0')}`;
 
     (async () => {
       try {
         const client = db();
-        let attQuery = client
-          .from('attendance')
-          .select('student_id, lesson_date, status')
-          .gte('lesson_date', fromDate)
-          .lte('lesson_date', toDate);
-
-        if (groupId) {
-          attQuery = attQuery.eq('group_id', groupId);
-        }
-
-        const { data: attRows, error: attError } = await attQuery;
-        if (attError) throw attError;
-
         const { data: stuRows, error: stuError } = await client
           .from('students')
           .select('id, full_name');
@@ -78,50 +104,209 @@ export default function Reports() {
           nameToIds.set(s.full_name, list);
         }
 
-        const studentDayStatus = new Map<string, Map<number, Set<string>>>();
-        for (const r of (attRows ?? []) as Array<{ student_id: string; lesson_date: string; status: string }>) {
-          const dayPart = Number(r.lesson_date.split('-')[2]);
-          if (!dayPart || dayPart < 1 || dayPart > daysInMonth) continue;
-          let dMap = studentDayStatus.get(r.student_id);
-          if (!dMap) {
-            dMap = new Map();
-            studentDayStatus.set(r.student_id, dMap);
+        if (period === 'daily') {
+          let q = client
+            .from('attendance')
+            .select('student_id, para, status')
+            .eq('lesson_date', date);
+          if (groupId) q = q.eq('group_id', groupId);
+          const { data: attRows, error: attError } = await q;
+          if (attError) throw attError;
+
+          const paraSet = new Set<number>([1, 2, 3]);
+          const byStuPara = new Map<string, Map<number, Set<string>>>();
+          for (const r of (attRows ?? []) as Array<{ student_id: string; para: number; status: string }>) {
+            const pNum = Number(r.para) || 1;
+            paraSet.add(pNum);
+            let pMap = byStuPara.get(r.student_id);
+            if (!pMap) {
+              pMap = new Map();
+              byStuPara.set(r.student_id, pMap);
+            }
+            let sSet = pMap.get(pNum);
+            if (!sSet) {
+              sSet = new Set();
+              pMap.set(pNum, sSet);
+            }
+            sSet.add(r.status);
           }
-          let sSet = dMap.get(dayPart);
+
+          const sortedParas = Array.from(paraSet).sort((a, b) => a - b);
+          const nextMatrix: Record<string, Record<string, DayMark>> = {};
+          for (const row of report.data ?? []) {
+            const candidateIds = nameToIds.get(row.label) ?? [row.key];
+            const marks: Record<string, DayMark> = {};
+            for (const pNum of sortedParas) {
+              const combined = new Set<string>();
+              for (const sid of candidateIds) {
+                const found = byStuPara.get(sid)?.get(pNum);
+                if (found) found.forEach((st) => combined.add(st));
+              }
+              marks[`p_${pNum}`] =
+                combined.size === 0 ? '·' : combined.has('present') ? '+' : '-';
+            }
+            nextMatrix[row.key] = marks;
+          }
+
+          if (!cancelled) {
+            setDailyParas(sortedParas);
+            setSlotMatrix(nextMatrix);
+          }
+          return;
+        }
+
+        if (period === 'weekly') {
+          const fromDate = weekDays[0].iso;
+          const toDate = weekDays[6].iso;
+          let q = client
+            .from('attendance')
+            .select('student_id, lesson_date, status')
+            .gte('lesson_date', fromDate)
+            .lte('lesson_date', toDate);
+          if (groupId) q = q.eq('group_id', groupId);
+          const { data: attRows, error: attError } = await q;
+          if (attError) throw attError;
+
+          const byStuDate = new Map<string, Map<string, Set<string>>>();
+          for (const r of (attRows ?? []) as Array<{ student_id: string; lesson_date: string; status: string }>) {
+            let dMap = byStuDate.get(r.student_id);
+            if (!dMap) {
+              dMap = new Map();
+              byStuDate.set(r.student_id, dMap);
+            }
+            let sSet = dMap.get(r.lesson_date);
+            if (!sSet) {
+              sSet = new Set();
+              dMap.set(r.lesson_date, sSet);
+            }
+            sSet.add(r.status);
+          }
+
+          const nextMatrix: Record<string, Record<string, DayMark>> = {};
+          for (const row of report.data ?? []) {
+            const candidateIds = nameToIds.get(row.label) ?? [row.key];
+            const marks: Record<string, DayMark> = {};
+            for (const w of weekDays) {
+              const combined = new Set<string>();
+              for (const sid of candidateIds) {
+                const found = byStuDate.get(sid)?.get(w.iso);
+                if (found) found.forEach((st) => combined.add(st));
+              }
+              marks[`w_${w.iso}`] =
+                combined.size === 0 ? '·' : combined.has('present') ? '+' : '-';
+            }
+            nextMatrix[row.key] = marks;
+          }
+
+          if (!cancelled) {
+            setSlotMatrix(nextMatrix);
+          }
+          return;
+        }
+
+        if (period === 'monthly') {
+          const ym = `${String(yearNum).padStart(4, '0')}-${String(monthNum).padStart(2, '0')}`;
+          const fromDate = `${ym}-01`;
+          const toDate = `${ym}-${String(daysInMonth).padStart(2, '0')}`;
+          let q = client
+            .from('attendance')
+            .select('student_id, lesson_date, status')
+            .gte('lesson_date', fromDate)
+            .lte('lesson_date', toDate);
+          if (groupId) q = q.eq('group_id', groupId);
+          const { data: attRows, error: attError } = await q;
+          if (attError) throw attError;
+
+          const byStuDay = new Map<string, Map<number, Set<string>>>();
+          for (const r of (attRows ?? []) as Array<{ student_id: string; lesson_date: string; status: string }>) {
+            const dayPart = Number(r.lesson_date.split('-')[2]);
+            if (!dayPart || dayPart < 1 || dayPart > daysInMonth) continue;
+            let dMap = byStuDay.get(r.student_id);
+            if (!dMap) {
+              dMap = new Map();
+              byStuDay.set(r.student_id, dMap);
+            }
+            let sSet = dMap.get(dayPart);
+            if (!sSet) {
+              sSet = new Set();
+              dMap.set(dayPart, sSet);
+            }
+            sSet.add(r.status);
+          }
+
+          const nextMatrix: Record<string, Record<string, DayMark>> = {};
+          for (const row of report.data ?? []) {
+            const candidateIds = nameToIds.get(row.label) ?? [row.key];
+            const marks: Record<string, DayMark> = {};
+            for (let d = 1; d <= daysInMonth; d++) {
+              const combined = new Set<string>();
+              for (const sid of candidateIds) {
+                const found = byStuDay.get(sid)?.get(d);
+                if (found) found.forEach((st) => combined.add(st));
+              }
+              marks[`d_${d}`] =
+                combined.size === 0 ? '·' : combined.has('present') ? '+' : '-';
+            }
+            nextMatrix[row.key] = marks;
+          }
+
+          if (!cancelled) {
+            setSlotMatrix(nextMatrix);
+          }
+          return;
+        }
+
+        // yearly
+        const fromDate = `${yearNum}-01-01`;
+        const toDate = `${yearNum}-12-31`;
+        let q = client
+          .from('attendance')
+          .select('student_id, lesson_date, status')
+          .gte('lesson_date', fromDate)
+          .lte('lesson_date', toDate);
+        if (groupId) q = q.eq('group_id', groupId);
+        const { data: attRows, error: attError } = await q;
+        if (attError) throw attError;
+
+        const byStuMonth = new Map<string, Map<number, Set<string>>>();
+        for (const r of (attRows ?? []) as Array<{ student_id: string; lesson_date: string; status: string }>) {
+          const mPart = Number(r.lesson_date.split('-')[1]);
+          if (!mPart || mPart < 1 || mPart > 12) continue;
+          let mMap = byStuMonth.get(r.student_id);
+          if (!mMap) {
+            mMap = new Map();
+            byStuMonth.set(r.student_id, mMap);
+          }
+          let sSet = mMap.get(mPart);
           if (!sSet) {
             sSet = new Set();
-            dMap.set(dayPart, sSet);
+            mMap.set(mPart, sSet);
           }
           sSet.add(r.status);
         }
 
-        const nextMatrix: Record<string, Record<number, DayMark>> = {};
+        const nextMatrix: Record<string, Record<string, DayMark>> = {};
         for (const row of report.data ?? []) {
           const candidateIds = nameToIds.get(row.label) ?? [row.key];
-          const dayMarks: Record<number, DayMark> = {};
-          for (let d = 1; d <= daysInMonth; d++) {
+          const marks: Record<string, DayMark> = {};
+          for (let m = 1; m <= 12; m++) {
             const combined = new Set<string>();
             for (const sid of candidateIds) {
-              const found = studentDayStatus.get(sid)?.get(d);
+              const found = byStuMonth.get(sid)?.get(m);
               if (found) found.forEach((st) => combined.add(st));
             }
-            if (combined.size === 0) {
-              dayMarks[d] = '·';
-            } else if (combined.has('present')) {
-              dayMarks[d] = '+';
-            } else {
-              dayMarks[d] = '-';
-            }
+            marks[`m_${m}`] =
+              combined.size === 0 ? '·' : combined.has('present') ? '+' : '-';
           }
-          nextMatrix[row.key] = dayMarks;
+          nextMatrix[row.key] = marks;
         }
 
         if (!cancelled) {
-          setDayMatrix(nextMatrix);
+          setSlotMatrix(nextMatrix);
         }
       } catch {
         if (!cancelled) {
-          setDayMatrix({});
+          setSlotMatrix({});
         }
       }
     })();
@@ -129,18 +314,18 @@ export default function Reports() {
     return () => {
       cancelled = true;
     };
-  }, [isMonthlyStudent, yearNum, monthNum, daysInMonth, groupId, report.data]);
+  }, [isStudentView, period, date, groupId, yearNum, monthNum, daysInMonth, report.data]);
 
   const rows = report.data ?? [];
   const sum = (k: keyof ReportRow) => rows.reduce((a, r) => a + (r[k] as number), 0);
   const first = groupBy === 'group' ? 'Guruh' : "O'quvchi";
 
-  const getDayMark = (r: ReportRow, d: number): DayMark => dayMatrix[r.key]?.[d] ?? '·';
+  const getSlotMark = (r: ReportRow, slotKey: string): DayMark => slotMatrix[r.key]?.[slotKey] ?? '·';
 
   const headers = [
     first,
     ...(groupBy === 'student' ? ['Guruh'] : []),
-    ...(isMonthlyStudent ? dayNumbers.map((d) => String(d)) : []),
+    ...slotCols.map((c) => c.label),
     'Keldi',
     'Sababli',
     'Sababsiz',
@@ -152,7 +337,7 @@ export default function Reports() {
   const toRow = (r: ReportRow) => [
     r.label,
     ...(groupBy === 'student' ? [r.sub ?? ''] : []),
-    ...(isMonthlyStudent ? dayNumbers.map((d) => getDayMark(r, d)) : []),
+    ...slotCols.map((c) => getSlotMark(r, c.key)),
     r.present,
     r.excused,
     r.unexcused,
@@ -164,27 +349,25 @@ export default function Reports() {
   const title = `${PERIOD_LABEL[period]} hisobot — ${groupBy === 'group' ? 'guruh' : "o'quvchi"} bo'yicha`;
   const subtitle = `Sana: ${formatDate(date)}`;
 
-  const dayCols: Column<ReportRow>[] = isMonthlyStudent
-    ? dayNumbers.map((d) => ({
-        key: `d_${d}`,
-        header: String(d),
-        render: (r: ReportRow) => {
-          const mark = getDayMark(r, d);
-          const cls =
-            mark === '+'
-              ? 'font-bold text-emerald-700'
-              : mark === '-'
-              ? 'font-bold text-red-600'
-              : 'text-slate-400';
-          return <span className={cls}>{mark}</span>;
-        }
-      }))
-    : [];
+  const dynamicCols: Column<ReportRow>[] = slotCols.map((c) => ({
+    key: c.key,
+    header: c.label,
+    render: (r: ReportRow) => {
+      const mark = getSlotMark(r, c.key);
+      const cls =
+        mark === '+'
+          ? 'font-bold text-emerald-700'
+          : mark === '-'
+          ? 'font-bold text-red-600'
+          : 'text-slate-400';
+      return <span className={cls}>{mark}</span>;
+    }
+  }));
 
   const cols: Column<ReportRow>[] = [
     { key: 'l', header: first, render: (r) => <span className="font-semibold">{r.label}</span> },
     ...(groupBy === 'student' ? [{ key: 'g', header: 'Guruh', render: (r: ReportRow) => r.sub }] : []),
-    ...dayCols,
+    ...dynamicCols,
     { key: 'p', header: 'Keldi', render: (r) => <span className="text-emerald-700">{r.present}</span> },
     { key: 'e', header: 'Sababli', render: (r) => <span className="text-amber-700">{r.excused}</span> },
     { key: 'u', header: 'Sababsiz', render: (r) => <span className="text-red-700">{r.unexcused}</span> },
