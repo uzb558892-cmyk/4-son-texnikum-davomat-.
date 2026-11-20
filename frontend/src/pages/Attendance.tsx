@@ -84,7 +84,7 @@ export default function Attendance() {
       {dutyReady && (meOnDuty
         ? <div className={`${BOX} border-emerald-200 bg-emerald-50 text-emerald-800`}>Bugun sizning navbatchilik kuningiz. Davomat belgilashingiz mumkin.</div>
         : <div className={`${BOX} border-amber-200 bg-amber-50 text-amber-800`}>Bugun sizning navbatchilik kuningiz emas. Davomatni faqat ko'rishingiz mumkin.</div>)}
-      {role === 'manaviyatchi' && <div className={`${BOX} border-slate-200 bg-white text-slate-700`}>Siz davomatni faqat ko'ra olasiz.</div>}
+      {(role === 'manaviyatchi' || role === 'direktor') && <div className={`${BOX} border-slate-200 bg-white text-slate-700`}>Siz davomatni faqat ko'ra olasiz.</div>}
       <div className="mb-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
         <Field label="Sana"><Input type="date" value={date} disabled={isDuty} onChange={(e) => e.target.value && setDate(e.target.value)} /></Field>
         <Field label="Guruh">

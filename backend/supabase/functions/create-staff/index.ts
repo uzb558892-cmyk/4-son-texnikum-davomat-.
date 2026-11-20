@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   const body = await readJson(req);
   if (!body) return fail(400, "BAD_REQUEST", "JSON tanasi kerak");
   const { email, password, full_name, phone, job_title, role } = body;
-  if (role !== "manaviyatchi" && role !== "navbatchi") return fail(422, "VALIDATION", "role: manaviyatchi | navbatchi");
+  if (role !== "manaviyatchi" && role !== "direktor" && role !== "navbatchi") return fail(422, "VALIDATION", "role: manaviyatchi | direktor | navbatchi");
   if (!isEmail(email)) return fail(422, "VALIDATION", "email noto‘g‘ri");
   if (!isStrongPassword(password)) return fail(422, "VALIDATION", "parol kamida 10 belgidan iborat bo‘lishi kerak");
   if (!isName(full_name)) return fail(422, "VALIDATION", "full_name noto‘g‘ri");

@@ -51,7 +51,7 @@ export default function DashboardView({ title, groupId, showGroups }: { title: s
       <PageHeader
         title={title}
         subtitle={`Bugun: ${formatDate(todayISO())}`}
-        actions={user?.role === 'manaviyatchi' ? <></> : <Link to="/davomat"><Button>Davomat belgilash</Button></Link>}
+        actions={(user?.role === 'manaviyatchi' || user?.role === 'direktor') ? <></> : <Link to="/davomat"><Button>Davomat belgilash</Button></Link>}
       />
       {error && <ErrorBox message={error} onRetry={reload} />}
       {data && (

@@ -4,7 +4,7 @@
 import { corsHeaders, fail, isName, isStrongPassword, isUuid, json, readJson, requireAdmin, serviceClient } from "../_shared/common.ts";
 
 const BAN_FOREVER = "876000h";
-const MANAGED_ROLES = ["group_leader", "manaviyatchi", "navbatchi"];
+const MANAGED_ROLES = ["group_leader", "manaviyatchi", "direktor", "navbatchi"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

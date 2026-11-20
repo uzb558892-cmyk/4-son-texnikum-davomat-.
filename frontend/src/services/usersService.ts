@@ -17,7 +17,7 @@ export type NewStaffInput = {
   full_name: string;
   phone: string;
   job_title: string;
-  role: 'manaviyatchi' | 'navbatchi';
+  role: 'manaviyatchi' | 'direktor' | 'navbatchi';
 };
 
 export type UserPatch = {

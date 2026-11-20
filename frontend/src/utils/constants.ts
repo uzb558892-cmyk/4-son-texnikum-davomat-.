@@ -26,5 +26,6 @@ export const ROLE_LABEL = {
   admin: 'Administrator',
   group_leader: 'Guruh rahbari',
   manaviyatchi: "Ma'naviyatchi",
+  direktor: "Direktor",
   navbatchi: 'Navbatchi'
 } as const;

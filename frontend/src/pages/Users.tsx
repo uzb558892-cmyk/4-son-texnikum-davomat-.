@@ -44,7 +44,7 @@ export default function Users() {
     if (!form) return;
     setBusy(true);
     try {
-      if (form.role === 'manaviyatchi' || form.role === 'navbatchi') {
+      if (form.role === 'manaviyatchi' || form.role === 'direktor' || form.role === 'navbatchi') {
         await usersService.createStaff({
           email: form.email, password: form.password, full_name: form.full_name,
           phone: form.phone, job_title: form.job_title, role: form.role
@@ -156,6 +156,7 @@ export default function Users() {
               <Select value={form.role} onChange={(e) => { const role = e.target.value as Role; setForm({ ...form, role, group_id: role === 'group_leader' ? form.group_id : null }); }}>
                 <option value="group_leader">Guruh rahbari</option>
                 <option value="manaviyatchi">Ma'naviyatchi</option>
+                <option value="direktor">Direktor</option>
                 <option value="navbatchi">Navbatchi</option>
               </Select>
             </Field>

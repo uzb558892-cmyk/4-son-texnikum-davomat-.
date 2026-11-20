@@ -21,6 +21,7 @@ import type { Role } from './types';
 const HOME: Record<Role, string> = {
   admin: '/admin',
   manaviyatchi: '/admin',
+  direktor: '/admin',
   group_leader: '/guruh-rahbari',
   navbatchi: '/navbatchi'
 };
@@ -49,7 +50,7 @@ export default function App() {
           <Route element={<ProtectedRoute roles={['admin', 'navbatchi']} />}>
             <Route path="/davomat-belgilash" element={<QuickAttendance />} />
           </Route>
-          <Route element={<ProtectedRoute roles={['admin', 'manaviyatchi']} />}>
+          <Route element={<ProtectedRoute roles={['admin', 'manaviyatchi', 'direktor']} />}>
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/navbatchilar" element={<DutySchedule />} />
           </Route>

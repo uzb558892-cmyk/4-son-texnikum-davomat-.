@@ -10,10 +10,10 @@ import type { Role } from '../types';
 
 interface NavItem { to: string; label: string; short?: string; icon: string; roles: Role[] }
 
-const ALL: Role[] = ['admin', 'group_leader', 'manaviyatchi', 'navbatchi'];
+const ALL: Role[] = ['admin', 'group_leader', 'manaviyatchi', 'direktor', 'navbatchi'];
 
 const NAV: NavItem[] = [
-  { to: '/admin', label: 'Bosh sahifa', icon: 'home', roles: ['admin', 'manaviyatchi'] },
+  { to: '/admin', label: 'Bosh sahifa', icon: 'home', roles: ['admin', 'manaviyatchi', 'direktor'] },
   { to: '/guruh-rahbari', label: 'Bosh sahifa', icon: 'home', roles: ['group_leader'] },
   { to: '/navbatchi', label: 'Bosh sahifa', icon: 'home', roles: ['navbatchi'] },
   { to: '/davomat-belgilash', label: 'Davomat belgilash', short: 'Belgilash', icon: 'check', roles: ['admin', 'navbatchi', 'group_leader'] },
@@ -22,7 +22,7 @@ const NAV: NavItem[] = [
   { to: '/davomat', label: 'Davomat', icon: 'check', roles: ALL },
   { to: '/ogohlantirishlar', label: 'Ogohlantirishlar', short: 'Xatlar', icon: 'alert', roles: ALL },
   { to: '/hisobotlar', label: 'Hisobotlar', icon: 'report', roles: ALL },
-  { to: '/navbatchilar', label: 'Navbatchilar jadvali', icon: 'users', roles: ['admin', 'manaviyatchi'] },
+  { to: '/navbatchilar', label: 'Navbatchilar jadvali', icon: 'users', roles: ['admin', 'manaviyatchi', 'direktor'] },
   { to: '/foydalanuvchilar', label: 'Foydalanuvchilar', icon: 'users', roles: ['admin'] },
   { to: '/sozlamalar', label: 'Sozlamalar', icon: 'settings', roles: ALL }
 ];
