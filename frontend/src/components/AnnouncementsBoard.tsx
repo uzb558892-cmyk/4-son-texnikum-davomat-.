@@ -136,10 +136,10 @@ export default function AnnouncementsBoard() {
   }
 
   return (
-    <section className="mb-6 rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50/90 via-white to-orange-50/60 p-4 shadow-sm sm:p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-amber-200/80 pb-3">
-        <div className="flex items-center gap-2.5">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
+    <section className="card mb-6 overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-amber-50/70 via-white to-white px-4 py-3.5 sm:px-6 sm:py-4">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 ring-1 ring-amber-200/80">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M11 5L6 9H2v6h4l5 4V5z" />
               <path d="M15.54 8.46a5 5 0 010 7.07" />
@@ -148,162 +148,135 @@ export default function AnnouncementsBoard() {
           </span>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg">E&apos;LONLAR TAXTASI</h2>
-              <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-semibold text-white">
+              <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg">E&apos;lonlar taxtasi</h2>
+              <span className="tabular-nums rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200/70">
                 {items.length}
               </span>
             </div>
-            <p className="text-xs text-slate-600">Texnikum yangiliklari va muhim e&apos;lonlar</p>
+            <p className="text-xs text-slate-500">Texnikum yangiliklari va muhim e&apos;lonlar</p>
           </div>
         </div>
-        {canWrite && (
-          <Button onClick={openCreate}>+ Yangi e&apos;lon</Button>
-        )}
+        {canWrite && <Button onClick={openCreate}>+ Yangi e&apos;lon</Button>}
       </div>
 
-      {error && <ErrorBox message={error} onRetry={reload} />}
-
-      {loading && !data ? (
-        <div className="py-4"><Spinner /></div>
-      ) : visibleItems.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-amber-200 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
-          Hozircha e&apos;lonlar yo&apos;q.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {visibleItems.map((item, idx) => (
-            <article
-              key={item.id}
-              className={`rounded-xl border p-3.5 transition sm:p-4 ${
-                idx === 0
-                  ? 'border-amber-300 bg-white shadow-xs'
-                  : 'border-slate-200/90 bg-white/95'
-              }`}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {idx === 0 && (
-                      <span className="rounded-md bg-rose-100 px-2 py-0.5 text-[11px] font-bold uppercase text-rose-700">
-                        Yangi
-                      </span>
-                    )}
-                    <h3 className="text-sm font-bold text-slate-900 sm:text-base">{item.title}</h3>
+      <div className="p-4 sm:p-6">
+        {error && <ErrorBox message={error} onRetry={reload} />}
+        {loading && !data ? (
+          <div className="py-4"><Spinner /></div>
+        ) : visibleItems.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-center text-sm text-slate-500">
+            Hozircha e&apos;lonlar yo&apos;q.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {visibleItems.map((item, idx) => (
+              <article
+                key={item.id}
+                className={`rounded-xl border p-4 transition-colors ${
+                  idx === 0 ? 'border-amber-200/90 bg-amber-50/35' : 'border-slate-200/80 bg-white hover:border-slate-300'
+                }`}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {idx === 0 && (
+                        <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+                          Yangi
+                        </span>
+                      )}
+                      <h3 className="text-sm font-bold text-slate-900 sm:text-base">{item.title}</h3>
+                    </div>
+                    <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-slate-700">{item.body}</p>
                   </div>
-                  <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-slate-700">{item.body}</p>
+                  {canManageItem(item) && (
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Button variant="secondary" className="px-2.5 py-1 text-xs" onClick={() => openEdit(item)}>
+                        Tahrirlash
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-50"
+                        disabled={deletingId === item.id}
+                        onClick={() => handleDelete(item)}
+                      >
+                        {deletingId === item.id ? "O'chirilmoqda..." : "O'chirish"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
-                {canManageItem(item) && (
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <Button
-                      variant="secondary"
-                      className="px-2.5 py-1 text-xs"
-                      onClick={() => openEdit(item)}
-                    >
-                      Tahrirlash
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50"
-                      disabled={deletingId === item.id}
-                      onClick={() => handleDelete(item)}
-                    >
-                      {deletingId === item.id ? "O'chirilmoqda..." : "O'chirish"}
-                    </Button>
+                {Array.isArray(item.image_urls) && item.image_urls.length > 0 && (
+                  <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
+                    {item.image_urls.map((url, i) => (
+                      <button
+                        key={`${item.id}-img-${i}`}
+                        type="button"
+                        onClick={() => setPreviewUrl(url)}
+                        className="group relative aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      >
+                        <img
+                          src={url}
+                          alt={`${item.title} — rasm ${i + 1}`}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
+                        />
+                      </button>
+                    ))}
                   </div>
                 )}
-              </div>
 
-              {Array.isArray(item.image_urls) && item.image_urls.length > 0 && (
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                  {item.image_urls.map((url, i) => (
-                    <button
-                      key={`${item.id}-img-${i}`}
-                      type="button"
-                      onClick={() => setPreviewUrl(url)}
-                      className="group relative aspect-video overflow-hidden rounded-lg border border-slate-200 bg-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                    >
-                      <img
-                        src={url}
-                        alt={`${item.title} — rasm ${i + 1}`}
-                        loading="lazy"
-                        className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
-                      />
-                    </button>
-                  ))}
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/70 pt-2.5 text-xs text-slate-500">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span>Muallif:</span>
+                    <strong className="font-semibold text-slate-800">{item.author_name}</strong>
+                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                      {roleLabel(item.author_role)}
+                    </span>
+                  </div>
+                  <span className="tabular-nums font-medium text-slate-400">{formatTashkentDateTime(item.created_at)}</span>
                 </div>
-              )}
+              </article>
+            ))}
+          </div>
+        )}
 
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2 text-xs text-slate-500">
-                <span>
-                  Muallif: <strong className="font-semibold text-slate-700">{item.author_name}</strong>{' '}
-                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600">
-                    {roleLabel(item.author_role)}
-                  </span>
-                </span>
-                <span>{formatTashkentDateTime(item.created_at)}</span>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-
-      {!expanded && hiddenCount > 0 && (
-        <div className="mt-4 flex justify-center">
-          <Button variant="secondary" onClick={() => setExpanded(true)}>
-            Yana {hiddenCount} ta e&apos;lonni ko&apos;rsatish
-          </Button>
-        </div>
-      )}
-      {expanded && items.length > INITIAL_VISIBLE && (
-        <div className="mt-4 flex justify-center">
-          <Button variant="ghost" onClick={() => setExpanded(false)}>
-            Qisqartirish (so&apos;nggi {INITIAL_VISIBLE} ta)
-          </Button>
-        </div>
-      )}
+        {!expanded && hiddenCount > 0 && (
+          <div className="mt-4 flex justify-center">
+            <Button variant="secondary" onClick={() => setExpanded(true)}>
+              Yana {hiddenCount} ta e&apos;lonni ko&apos;rsatish
+            </Button>
+          </div>
+        )}
+        {expanded && items.length > INITIAL_VISIBLE && (
+          <div className="mt-4 flex justify-center">
+            <Button variant="ghost" onClick={() => setExpanded(false)}>
+              Qisqartirish (so&apos;nggi {INITIAL_VISIBLE} ta)
+            </Button>
+          </div>
+        )}
+      </div>
 
       {createOpen && (
         <Modal title="Yangi e'lon qo'shish" onClose={() => setCreateOpen(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
             <Field label="Sarlavha">
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Masalan: Ertaga umumiy yig'ilish"
-                required
-              />
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Masalan: Ertaga umumiy yig'ilish" required />
             </Field>
             <Field label="E'lon matni">
-              <Textarea
-                rows={4}
-                value={body}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBody(e.target.value)}
-                placeholder="E'lon mazmunini batafsil yozing..."
-                required
-              />
+              <Textarea rows={4} value={body} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBody(e.target.value)} placeholder="E'lon mazmunini batafsil yozing..." required />
             </Field>
-            <Field label="Rasmlar (ixtiyoriy, bir nechta tanlash mumkin, har biri max 5 MB)">
+            <Field label="Rasmlar (ixtiyoriy, har biri max 5 MB)">
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 multiple
                 onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-                className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-amber-900 hover:file:bg-amber-200"
+                className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-brand-700 hover:file:bg-brand-100"
               />
-              {files.length > 0 && (
-                <p className="mt-1 text-xs text-slate-600">
-                  Tanlangan rasmlar: {files.map((f) => f.name).join(', ')}
-                </p>
-              )}
             </Field>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>
-                Bekor qilish
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? 'Joylanmoqda...' : "E'lonni joylash"}
-              </Button>
+              <Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>Bekor qilish</Button>
+              <Button type="submit" disabled={submitting}>{submitting ? 'Joylanmoqda...' : "E'lonni joylash"}</Button>
             </div>
           </form>
         </Modal>
@@ -313,37 +286,19 @@ export default function AnnouncementsBoard() {
         <Modal title="E'lonni tahrirlash" onClose={() => setEditing(null)}>
           <form onSubmit={handleUpdate} className="space-y-4">
             <Field label="Sarlavha">
-              <Input
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                required
-              />
+              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} required />
             </Field>
             <Field label="E'lon matni">
-              <Textarea
-                rows={4}
-                value={editBody}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditBody(e.target.value)}
-                required
-              />
+              <Textarea rows={4} value={editBody} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditBody(e.target.value)} required />
             </Field>
             {keptUrls.length > 0 && (
-              <div>
-                <p className="mb-1.5 text-xs font-medium text-slate-700">Mavjud rasmlar</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {keptUrls.map((url, i) => (
-                    <div key={`kept-${i}`} className="relative overflow-hidden rounded-lg border border-slate-200">
-                      <img src={url} alt={`Rasm ${i + 1}`} className="h-20 w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setKeptUrls((prev) => prev.filter((_, idx) => idx !== i))}
-                        className="absolute right-1 top-1 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white"
-                      >
-                        X
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              <div className="grid grid-cols-3 gap-2">
+                {keptUrls.map((url, i) => (
+                  <div key={`kept-${i}`} className="relative overflow-hidden rounded-lg border border-slate-200">
+                    <img src={url} alt={`Rasm ${i + 1}`} className="h-20 w-full object-cover" />
+                    <button type="button" onClick={() => setKeptUrls((p) => p.filter((_, idx) => idx !== i))} className="absolute right-1 top-1 rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white">X</button>
+                  </div>
+                ))}
               </div>
             )}
             <Field label="Yangi rasm qo'shish (ixtiyoriy)">
@@ -352,16 +307,12 @@ export default function AnnouncementsBoard() {
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 multiple
                 onChange={(e) => setEditFiles(Array.from(e.target.files ?? []))}
-                className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-amber-900 hover:file:bg-amber-200"
+                className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-brand-700 hover:file:bg-brand-100"
               />
             </Field>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="secondary" onClick={() => setEditing(null)}>
-                Bekor qilish
-              </Button>
-              <Button type="submit" disabled={updating}>
-                {updating ? 'Saqlanmoqda...' : 'Saqlash'}
-              </Button>
+              <Button type="button" variant="secondary" onClick={() => setEditing(null)}>Bekor qilish</Button>
+              <Button type="submit" disabled={updating}>{updating ? 'Saqlanmoqda...' : 'Saqlash'}</Button>
             </div>
           </form>
         </Modal>
@@ -371,14 +322,7 @@ export default function AnnouncementsBoard() {
         <Modal title="Rasm ko'rinishi" onClose={() => setPreviewUrl(null)}>
           <div className="flex flex-col items-center gap-3">
             <img src={previewUrl} alt="Kattalashtirilgan rasm" className="max-h-[70vh] w-auto rounded-lg object-contain" />
-            <a
-              href={previewUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs font-medium text-blue-600 underline"
-            >
-              Asl hajmda yangi oynada ochish
-            </a>
+            <a href={previewUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-brand-600 underline">Asl hajmda ochish</a>
           </div>
         </Modal>
       )}
