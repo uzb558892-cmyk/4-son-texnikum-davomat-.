@@ -12,15 +12,17 @@ function download(blob: Blob, filename: string) {
 }
 
 const DOC_STYLE = `
-  body{font-family:'Times New Roman',serif;font-size:14px;color:#111;margin:32px}
-  h1{font-size:20px;text-align:center;margin:0 0 6px}
-  h2{font-size:16px;margin:18px 0 8px}
-  p{line-height:1.55;margin:8px 0}
-  table{border-collapse:collapse;width:100%;margin-top:10px}
-  th,td{border:1px solid #444;padding:6px 8px;text-align:left;font-size:13px}
+  @page{size:A4 landscape;margin:10mm}
+  body{font-family:'Times New Roman',serif;font-size:11px;color:#111;margin:12px}
+  h1{font-size:16px;text-align:center;margin:0 0 4px}
+  h2{font-size:13px;margin:12px 0 6px}
+  p{line-height:1.4;margin:4px 0}
+  table{border-collapse:collapse;width:100%;margin-top:8px;table-layout:auto}
+  th,td{border:1px solid #444;padding:3px 4px;text-align:center;font-size:9.5px;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left;white-space:normal}
   th{background:#e8eefc}
-  .muted{color:#555;text-align:center;margin-bottom:16px}
-  .sign{margin-top:36px}
+  .muted{color:#555;text-align:center;margin-bottom:10px}
+  .sign{margin-top:24px}
 `;
 
 function wrapHtml(title: string, body: string): string {
