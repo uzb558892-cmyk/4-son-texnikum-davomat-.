@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { groupsService, reportsService } from '../services';
+import { db } from '../services/supabase';
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
@@ -14,6 +15,8 @@ import { formatDate, todayISO } from '../utils/format';
 import { exportExcel, exportWord, printHtml, tableHtml } from '../utils/export';
 import type { ReportGroupBy, ReportPeriod, ReportRow } from '../types';
 
+type DayMark = '+' | '-' | '·';
+
 export default function Reports() {
   const { user } = useAuth();
   const seeAll = user?.role !== 'group_leader';
@@ -21,20 +24,167 @@ export default function Reports() {
   const [date, setDate] = useState(todayISO());
   const [groupBy, setGroupBy] = useState<ReportGroupBy>(seeAll ? 'group' : 'student');
   const [groupId, setGroupId] = useState(seeAll ? '' : user?.group_id ?? '');
+  const [dayMatrix, setDayMatrix] = useState<Record<string, Record<number, DayMark>>>({});
+
   const groups = useAsync(() => groupsService.list(), []);
-  const report = useAsync(() => reportsService.get({ period, date, groupBy, groupId: groupId || undefined }), [period, date, groupBy, groupId]);
+  const report = useAsync(
+    () => reportsService.get({ period, date, groupBy, groupId: groupId || undefined }),
+    [period, date, groupBy, groupId]
+  );
+
+  const isMonthlyStudent = period === 'monthly' && groupBy === 'student';
+  const [yearStr, monthStr] = date.split('-');
+  const yearNum = Number(yearStr) || new Date().getFullYear();
+  const monthNum = Number(monthStr) || new Date().getMonth() + 1;
+  const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+  const dayNumbers = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isMonthlyStudent) {
+      setDayMatrix({});
+      return;
+    }
+
+    const ym = `${String(yearNum).padStart(4, '0')}-${String(monthNum).padStart(2, '0')}`;
+    const fromDate = `${ym}-01`;
+    const toDate = `${ym}-${String(daysInMonth).padStart(2, '0')}`;
+
+    (async () => {
+      try {
+        const client = db();
+        let attQuery = client
+          .from('attendance')
+          .select('student_id, lesson_date, status')
+          .gte('lesson_date', fromDate)
+          .lte('lesson_date', toDate);
+
+        if (groupId) {
+          attQuery = attQuery.eq('group_id', groupId);
+        }
+
+        const { data: attRows, error: attError } = await attQuery;
+        if (attError) throw attError;
+
+        const { data: stuRows, error: stuError } = await client
+          .from('students')
+          .select('id, full_name');
+        if (stuError) throw stuError;
+
+        const nameToIds = new Map<string, string[]>();
+        for (const s of (stuRows ?? []) as Array<{ id: string; full_name: string }>) {
+          const list = nameToIds.get(s.full_name) ?? [];
+          list.push(s.id);
+          nameToIds.set(s.full_name, list);
+        }
+
+        const studentDayStatus = new Map<string, Map<number, Set<string>>>();
+        for (const r of (attRows ?? []) as Array<{ student_id: string; lesson_date: string; status: string }>) {
+          const dayPart = Number(r.lesson_date.split('-')[2]);
+          if (!dayPart || dayPart < 1 || dayPart > daysInMonth) continue;
+          let dMap = studentDayStatus.get(r.student_id);
+          if (!dMap) {
+            dMap = new Map();
+            studentDayStatus.set(r.student_id, dMap);
+          }
+          let sSet = dMap.get(dayPart);
+          if (!sSet) {
+            sSet = new Set();
+            dMap.set(dayPart, sSet);
+          }
+          sSet.add(r.status);
+        }
+
+        const nextMatrix: Record<string, Record<number, DayMark>> = {};
+        for (const row of report.data ?? []) {
+          const candidateIds = nameToIds.get(row.label) ?? [row.key];
+          const dayMarks: Record<number, DayMark> = {};
+          for (let d = 1; d <= daysInMonth; d++) {
+            const combined = new Set<string>();
+            for (const sid of candidateIds) {
+              const found = studentDayStatus.get(sid)?.get(d);
+              if (found) found.forEach((st) => combined.add(st));
+            }
+            if (combined.size === 0) {
+              dayMarks[d] = '·';
+            } else if (combined.has('present')) {
+              dayMarks[d] = '+';
+            } else {
+              dayMarks[d] = '-';
+            }
+          }
+          nextMatrix[row.key] = dayMarks;
+        }
+
+        if (!cancelled) {
+          setDayMatrix(nextMatrix);
+        }
+      } catch {
+        if (!cancelled) {
+          setDayMatrix({});
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isMonthlyStudent, yearNum, monthNum, daysInMonth, groupId, report.data]);
 
   const rows = report.data ?? [];
   const sum = (k: keyof ReportRow) => rows.reduce((a, r) => a + (r[k] as number), 0);
   const first = groupBy === 'group' ? 'Guruh' : "O'quvchi";
-  const headers = [first, ...(groupBy === 'student' ? ['Guruh'] : []), 'Keldi', 'Sababli', 'Sababsiz', 'Qochdi', 'Sababli soat', 'Sababsiz soat'];
-  const toRow = (r: ReportRow) => [r.label, ...(groupBy === 'student' ? [r.sub ?? ''] : []), r.present, r.excused, r.unexcused, r.skipped, r.excused_hours, r.unexcused_hours];
+
+  const getDayMark = (r: ReportRow, d: number): DayMark => dayMatrix[r.key]?.[d] ?? '·';
+
+  const headers = [
+    first,
+    ...(groupBy === 'student' ? ['Guruh'] : []),
+    ...(isMonthlyStudent ? dayNumbers.map((d) => String(d)) : []),
+    'Keldi',
+    'Sababli',
+    'Sababsiz',
+    'Qochdi',
+    'Sababli soat',
+    'Sababsiz soat'
+  ];
+
+  const toRow = (r: ReportRow) => [
+    r.label,
+    ...(groupBy === 'student' ? [r.sub ?? ''] : []),
+    ...(isMonthlyStudent ? dayNumbers.map((d) => getDayMark(r, d)) : []),
+    r.present,
+    r.excused,
+    r.unexcused,
+    r.skipped,
+    r.excused_hours,
+    r.unexcused_hours
+  ];
+
   const title = `${PERIOD_LABEL[period]} hisobot — ${groupBy === 'group' ? 'guruh' : "o'quvchi"} bo'yicha`;
   const subtitle = `Sana: ${formatDate(date)}`;
+
+  const dayCols: Column<ReportRow>[] = isMonthlyStudent
+    ? dayNumbers.map((d) => ({
+        key: `d_${d}`,
+        header: String(d),
+        render: (r: ReportRow) => {
+          const mark = getDayMark(r, d);
+          const cls =
+            mark === '+'
+              ? 'font-bold text-emerald-700'
+              : mark === '-'
+              ? 'font-bold text-red-600'
+              : 'text-slate-400';
+          return <span className={cls}>{mark}</span>;
+        }
+      }))
+    : [];
 
   const cols: Column<ReportRow>[] = [
     { key: 'l', header: first, render: (r) => <span className="font-semibold">{r.label}</span> },
     ...(groupBy === 'student' ? [{ key: 'g', header: 'Guruh', render: (r: ReportRow) => r.sub }] : []),
+    ...dayCols,
     { key: 'p', header: 'Keldi', render: (r) => <span className="text-emerald-700">{r.present}</span> },
     { key: 'e', header: 'Sababli', render: (r) => <span className="text-amber-700">{r.excused}</span> },
     { key: 'u', header: 'Sababsiz', render: (r) => <span className="text-red-700">{r.unexcused}</span> },
