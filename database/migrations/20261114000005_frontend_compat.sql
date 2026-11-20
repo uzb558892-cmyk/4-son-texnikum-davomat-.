@@ -76,10 +76,10 @@ begin
   end if;
   with gs as (
     select g.id,g.name,count(distinct s.id) filter(where s.is_active)::integer total,
-      count(a.id) filter(where s.is_active and a.status='present')::integer present,
-      count(a.id) filter(where s.is_active and a.status='excused_absent')::integer excused,
-      count(a.id) filter(where s.is_active and a.status='unexcused_absent')::integer unexcused,
-      count(a.id) filter(where s.is_active and a.status='escaped')::integer skipped
+      count(distinct s.id) filter(where s.is_active and a.status='present')::integer present,
+      count(distinct s.id) filter(where s.is_active and a.status='excused_absent')::integer excused,
+      count(distinct s.id) filter(where s.is_active and a.status='unexcused_absent')::integer unexcused,
+      count(distinct s.id) filter(where s.is_active and a.status='escaped')::integer skipped
     from public.groups g
     left join public.students s on s.group_id=g.id and s.is_active
     left join public.attendance a on a.student_id=s.id and a.lesson_date=p_date
@@ -87,10 +87,10 @@ begin
     group by g.id,g.name
   ), totals as (
     select count(distinct s.id) filter(where s.is_active)::integer students,
-      count(a.id) filter(where s.is_active and a.status='present')::integer present,
-      count(a.id) filter(where s.is_active and a.status='excused_absent')::integer excused,
-      count(a.id) filter(where s.is_active and a.status='unexcused_absent')::integer unexcused,
-      count(a.id) filter(where s.is_active and a.status='escaped')::integer skipped
+      count(distinct s.id) filter(where s.is_active and a.status='present')::integer present,
+      count(distinct s.id) filter(where s.is_active and a.status='excused_absent')::integer excused,
+      count(distinct s.id) filter(where s.is_active and a.status='unexcused_absent')::integer unexcused,
+      count(distinct s.id) filter(where s.is_active and a.status='escaped')::integer skipped
     from public.students s left join public.attendance a on a.student_id=s.id and a.lesson_date=p_date
     where (public.is_admin() or s.group_id=v_group) and (p_group_id is null or s.group_id=p_group_id)
   ), warning_count as (

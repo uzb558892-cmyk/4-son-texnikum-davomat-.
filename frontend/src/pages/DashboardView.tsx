@@ -27,8 +27,7 @@ export default function DashboardView({ title, groupId, showGroups }: { title: s
       key: 'pc',
       header: 'Qatnashish',
       render: (r) => {
-        const marked = r.present + r.excused + r.unexcused + r.skipped;
-        const ratio = marked > 0 ? Math.max(0, Math.min(100, (r.present / marked) * 100)) : 0;
+        const ratio = r.total > 0 ? Math.max(0, Math.min(100, (r.present / r.total) * 100)) : 0;
         return (
           <div className="flex min-w-[110px] items-center gap-2.5">
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
@@ -38,7 +37,7 @@ export default function DashboardView({ title, groupId, showGroups }: { title: s
               />
             </div>
             <span className="tabular-nums w-11 text-right text-xs font-semibold text-slate-700">
-              {percent(r.present, marked)}
+              {percent(r.present, r.total)}
             </span>
           </div>
         );

@@ -105,7 +105,7 @@ export default function Attendance() {
         <span className="text-slate-500">Belgilandi: {marked} / {total}</span>
         {canEdit && (
           <div className="ml-auto flex gap-2">
-            <Button variant="secondary" onClick={allPresent} disabled={!total}>Hammasi keldi</Button>
+            {role === 'admin' && <Button variant="secondary" onClick={allPresent} disabled={!total}>Hammasi keldi</Button>}
             <Button onClick={save} disabled={saving || marked === 0}>{saving ? 'Saqlanmoqda...' : 'Saqlash'}</Button>
           </div>
         )}
