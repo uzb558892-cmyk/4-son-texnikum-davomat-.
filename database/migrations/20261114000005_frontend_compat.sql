@@ -75,7 +75,7 @@ begin
     raise exception 'Bu guruh uchun ruxsat yo‘q' using errcode='42501';
   end if;
   with gs as (
-    select g.id,g.name,count(s.id) filter(where s.is_active)::integer total,
+    select g.id,g.name,count(distinct s.id) filter(where s.is_active)::integer total,
       count(a.id) filter(where s.is_active and a.status='present')::integer present,
       count(a.id) filter(where s.is_active and a.status='excused_absent')::integer excused,
       count(a.id) filter(where s.is_active and a.status='unexcused_absent')::integer unexcused,
@@ -86,7 +86,7 @@ begin
     where (public.is_admin() or g.id=v_group) and (p_group_id is null or g.id=p_group_id)
     group by g.id,g.name
   ), totals as (
-    select count(*) filter(where s.is_active)::integer students,
+    select count(distinct s.id) filter(where s.is_active)::integer students,
       count(a.id) filter(where s.is_active and a.status='present')::integer present,
       count(a.id) filter(where s.is_active and a.status='excused_absent')::integer excused,
       count(a.id) filter(where s.is_active and a.status='unexcused_absent')::integer unexcused,
