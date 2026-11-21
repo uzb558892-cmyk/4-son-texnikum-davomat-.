@@ -21,7 +21,6 @@ interface SlotCol {
   key: string;
   label: string;
 }
-
 const WEEKDAY_LABELS = ['Du', 'Se', 'Cho', 'Pa', 'Ju', 'Sha', 'Ya'];
 const MONTH_LABELS = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
 
@@ -356,24 +355,24 @@ export default function Reports() {
       const mark = getSlotMark(r, c.key);
       const cls =
         mark === '+'
-          ? 'font-bold text-emerald-700'
+          ? 'tabular-nums font-bold text-emerald-700'
           : mark === '-'
-          ? 'font-bold text-red-600'
+          ? 'tabular-nums font-bold text-rose-600'
           : 'text-slate-400';
       return <span className={cls}>{mark}</span>;
     }
   }));
 
   const cols: Column<ReportRow>[] = [
-    { key: 'l', header: first, render: (r) => <span className="font-semibold">{r.label}</span> },
-    ...(groupBy === 'student' ? [{ key: 'g', header: 'Guruh', render: (r: ReportRow) => r.sub }] : []),
+    { key: 'l', header: first, render: (r) => <span className="font-semibold text-slate-900">{r.label}</span> },
+    ...(groupBy === 'student' ? [{ key: 'g', header: 'Guruh', render: (r: ReportRow) => <span className="text-indigo-700 font-medium">{r.sub}</span> }] : []),
     ...dynamicCols,
-    { key: 'p', header: 'Keldi', render: (r) => <span className="text-emerald-700">{r.present}</span> },
-    { key: 'e', header: 'Sababli', render: (r) => <span className="text-amber-700">{r.excused}</span> },
-    { key: 'u', header: 'Sababsiz', render: (r) => <span className="text-red-700">{r.unexcused}</span> },
-    { key: 's', header: 'Qochdi', render: (r) => <span className="text-violet-700">{r.skipped}</span> },
-    { key: 'eh', header: 'Sababli soat', render: (r) => r.excused_hours },
-    { key: 'uh', header: 'Sababsiz soat', render: (r) => <span className="font-semibold">{r.unexcused_hours}</span> }
+    { key: 'p', header: 'Keldi', render: (r) => <span className="tabular-nums font-semibold text-emerald-700">{r.present}</span> },
+    { key: 'e', header: 'Sababli', render: (r) => <span className="tabular-nums font-semibold text-amber-700">{r.excused}</span> },
+    { key: 'u', header: 'Sababsiz', render: (r) => <span className="tabular-nums font-semibold text-rose-700">{r.unexcused}</span> },
+    { key: 's', header: 'Qochdi', render: (r) => <span className="tabular-nums font-semibold text-violet-700">{r.skipped}</span> },
+    { key: 'eh', header: 'Sababli soat', render: (r) => <span className="tabular-nums text-slate-700">{r.excused_hours}</span> },
+    { key: 'uh', header: 'Sababsiz soat', render: (r) => <span className="tabular-nums font-bold text-slate-900">{r.unexcused_hours}</span> }
   ];
 
   return (
@@ -385,7 +384,7 @@ export default function Reports() {
           <Button variant="secondary" disabled={!rows.length} onClick={() => exportWord(`hisobot-${period}-${date}`, title, tableHtml(title, subtitle, headers, rows.map(toRow)))}>Word</Button>
           <Button variant="secondary" disabled={!rows.length} onClick={() => printHtml(title, tableHtml(title, subtitle, headers, rows.map(toRow)))}>Chop etish</Button>
         </>} />
-      <div className="mb-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+      <div className="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
         <Field label="Davr"><Select value={period} onChange={(e) => setPeriod(e.target.value as ReportPeriod)}>{(Object.keys(PERIOD_LABEL) as ReportPeriod[]).map((p) => <option key={p} value={p}>{PERIOD_LABEL[p]}</option>)}</Select></Field>
         <Field label="Sana"><Input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></Field>
         <Field label="Kesim"><Select value={groupBy} onChange={(e) => setGroupBy(e.target.value as ReportGroupBy)}><option value="group">Guruh bo'yicha</option><option value="student">O'quvchi bo'yicha</option></Select></Field>
