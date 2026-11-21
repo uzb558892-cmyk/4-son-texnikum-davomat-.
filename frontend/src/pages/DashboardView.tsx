@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useAsync } from '../hooks/useAsync';
 import { dashboardService, groupsService } from '../services';
+import { db } from '../services/supabase';
 import PageHeader from '../components/PageHeader';
 import StatCard from '../components/StatCard';
 import DataTable, { type Column } from '../components/DataTable';
@@ -20,6 +22,11 @@ interface GroupSummaryRow {
   unexcused: number;
   skipped: number;
   attendance_rate: number;
+}
+
+interface LiveCounts {
+  byGroup: Record<string, { present: number; excused: number; unexcused: number; skipped: number }>;
+  totals: { present: number; excused: number; unexcused: number; skipped: number };
 }
 
 export default function DashboardView({
@@ -45,6 +52,63 @@ export default function DashboardView({
 
   const stats = useAsync(() => dashboardService.stats(effectiveGroupId), [effectiveGroupId]);
   const groups = useAsync(() => groupsService.list(), []);
+  const [live, setLive] = useState<LiveCounts>({
+    byGroup: {},
+    totals: { present: 0, excused: 0, unexcused: 0, skipped: 0 }
+  });
+
+  const today = todayISO();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const client = db();
+        let q = client
+          .from('attendance')
+          .select('group_id, status')
+          .eq('lesson_date', today);
+        if (effectiveGroupId) q = q.eq('group_id', effectiveGroupId);
+        const { data, error } = await q;
+        if (error) throw error;
+
+        const byGroup: LiveCounts['byGroup'] = {};
+        const totals = { present: 0, excused: 0, unexcused: 0, skipped: 0 };
+
+        for (const r of (data ?? []) as Array<{ group_id: string; status: string }>) {
+          const gid = String(r.group_id ?? '');
+          if (!gid) continue;
+          if (!byGroup[gid]) {
+            byGroup[gid] = { present: 0, excused: 0, unexcused: 0, skipped: 0 };
+          }
+          if (r.status === 'present') {
+            byGroup[gid].present += 1;
+            totals.present += 1;
+          } else if (r.status === 'excused') {
+            byGroup[gid].excused += 1;
+            totals.excused += 1;
+          } else if (r.status === 'unexcused') {
+            byGroup[gid].unexcused += 1;
+            totals.unexcused += 1;
+          } else if (r.status === 'skipped') {
+            byGroup[gid].skipped += 1;
+            totals.skipped += 1;
+          }
+        }
+
+        if (!cancelled) {
+          setLive({ byGroup, totals });
+        }
+      } catch {
+        // Keep stats fallback
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveGroupId, today]);
+
   const d = stats.data as (Record<string, any> & {
     present: number;
     excused: number;
@@ -76,20 +140,25 @@ export default function DashboardView({
   const groupRows: GroupSummaryRow[] = (groups.data ?? [])
     .filter((g) => (!effectiveGroupId ? true : g.id === effectiveGroupId))
     .map((g) => {
-      const s = byGroupMap.get(g.id) ?? {};
-      const present = Number(s.present ?? 0);
-      const excused = Number(s.excused ?? 0);
-      const unexcused = Number(s.unexcused ?? 0);
-      const skipped = Number(s.skipped ?? 0);
+      const rpcItem = byGroupMap.get(g.id) ?? {};
+      const liveItem = live.byGroup[g.id];
+
+      const present = liveItem ? liveItem.present : Number(rpcItem.present ?? 0);
+      const excused = liveItem ? liveItem.excused : Number(rpcItem.excused ?? 0);
+      const unexcused = liveItem ? liveItem.unexcused : Number(rpcItem.unexcused ?? 0);
+      const skipped = liveItem ? liveItem.skipped : Number(rpcItem.skipped ?? 0);
+
       const totalMarks = present + excused + unexcused + skipped;
       const computedRate = totalMarks > 0 ? Math.round((present / totalMarks) * 100) : 0;
-      const rateRaw = s.attendance_rate ?? s.rate ?? computedRate;
-      const attendance_rate = Math.max(0, Math.min(100, Number(rateRaw) || 0));
+      const rateRaw = rpcItem.attendance_rate ?? rpcItem.rate ?? computedRate;
+      const attendance_rate = liveItem
+        ? computedRate
+        : Math.max(0, Math.min(100, Number(rateRaw) || 0));
 
       return {
         group_id: g.id,
         group_name: g.name,
-        students_count: Number(s.students_count ?? groupStudentsById.get(g.id) ?? 0),
+        students_count: Number(rpcItem.students_count ?? groupStudentsById.get(g.id) ?? 0),
         present,
         excused,
         unexcused,
@@ -97,6 +166,14 @@ export default function DashboardView({
         attendance_rate
       };
     });
+
+  const displayTotals = {
+    present: d ? Math.max(Number(d.present ?? 0), live.totals.present) : live.totals.present,
+    excused: d ? Math.max(Number(d.excused ?? 0), live.totals.excused) : live.totals.excused,
+    unexcused: d ? Math.max(Number(d.unexcused ?? 0), live.totals.unexcused) : live.totals.unexcused,
+    skipped: d ? Math.max(Number(d.skipped ?? 0), live.totals.skipped) : live.totals.skipped,
+    warnings: Number(d?.warnings ?? 0)
+  };
 
   const cols: Column<GroupSummaryRow>[] = [
     {
@@ -182,7 +259,7 @@ export default function DashboardView({
 
       <PageHeader
         title={resolvedTitle}
-        subtitle={`Bugun: ${formatDate(todayISO())}${leaderGroupName ? ` · ${leaderGroupName}` : ''}`}
+        subtitle={`Bugun: ${formatDate(today)}${leaderGroupName ? ` · ${leaderGroupName}` : ''}`}
         actions={
           <Link to={`${resolvedBase}/attendance`}>
             <Button>
@@ -208,32 +285,32 @@ export default function DashboardView({
             )}
             <StatCard
               label="Bugun keldi"
-              value={d.present}
+              value={displayTotals.present}
               sub="belgilangan paralar"
               icon={<Icon name="check" />}
               tone="green"
             />
             <StatCard
               label="Sababli kelmadi"
-              value={d.excused}
+              value={displayTotals.excused}
               icon={<Icon name="report" />}
               tone="amber"
             />
             <StatCard
               label="Sababsiz kelmadi"
-              value={d.unexcused}
+              value={displayTotals.unexcused}
               icon={<Icon name="alert" />}
               tone="red"
             />
             <StatCard
               label="Darsdan qochdi"
-              value={d.skipped}
+              value={displayTotals.skipped}
               icon={<Icon name="alert" />}
               tone="violet"
             />
             <StatCard
               label="Ogohlantirishlar"
-              value={d.warnings}
+              value={displayTotals.warnings}
               sub="72 soatdan ortiq"
               icon={<Icon name="alert" />}
               tone="red"
