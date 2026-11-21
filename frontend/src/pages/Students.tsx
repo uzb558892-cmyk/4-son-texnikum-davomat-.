@@ -26,60 +26,181 @@ export default function Students() {
   const [edit, setEdit] = useState<Partial<Student> | null>(null);
   const [showCodes, setShowCodes] = useState(false);
   const [toast, setToast] = useState<{ m: string; t: 'ok' | 'err' } | null>(null);
-  const notify = (m: string, t: 'ok' | 'err' = 'ok') => { setToast({ m, t }); setTimeout(() => setToast(null), 2500); };
 
-  const rows = useMemo(() => (students.data ?? []).filter((s) => s.full_name.toLowerCase().includes(dq.toLowerCase())), [students.data, dq]);
+  const notify = (m: string, t: 'ok' | 'err' = 'ok') => {
+    setToast({ m, t });
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const rows = useMemo(
+    () => (students.data ?? []).filter((s) => s.full_name.toLowerCase().includes(dq.toLowerCase())),
+    [students.data, dq]
+  );
 
   async function save() {
     if (!edit?.full_name || !edit.group_id) return;
     try {
-      await studentsService.save({ id: edit.id, full_name: edit.full_name, group_id: edit.group_id, phone: edit.phone, parent_phone: edit.parent_phone });
-      setEdit(null); students.reload(); notify("Saqlandi");
-    } catch (e) { notify(errorMessage(e), 'err'); }
+      await studentsService.save({
+        id: edit.id,
+        full_name: edit.full_name,
+        group_id: edit.group_id,
+        phone: edit.phone,
+        parent_phone: edit.parent_phone
+      });
+      setEdit(null);
+      students.reload();
+      notify('Saqlandi');
+    } catch (e) {
+      notify(errorMessage(e), 'err');
+    }
   }
+
   async function remove(s: Student) {
     if (!confirm(`"${s.full_name}" o'quvchisini o'chirishni tasdiqlaysizmi?`)) return;
-    try { await studentsService.remove(s.id); students.reload(); notify("O'chirildi"); } catch (e) { notify(errorMessage(e), 'err'); }
+    try {
+      await studentsService.remove(s.id);
+      students.reload();
+      notify("O'chirildi");
+    } catch (e) {
+      notify(errorMessage(e), 'err');
+    }
   }
 
   const cols: Column<Student>[] = [
-    { key: 'n', header: "F.I.Sh.", render: (s) => <span className="font-semibold">{s.full_name}</span> },
-    { key: 'g', header: "Guruh", render: (s) => s.group_name },
-    { key: 'p', header: "Telefon", render: (s) => s.phone || '—' },
-    { key: 'pp', header: "Ota-onasi telefoni", render: (s) => s.parent_phone || '—' },
+    {
+      key: 'n',
+      header: 'F.I.Sh.',
+      sortBy: (s) => s.full_name,
+      render: (s) => <span className="font-semibold text-slate-900">{s.full_name}</span>
+    },
+    {
+      key: 'g',
+      header: 'Guruh',
+      sortBy: (s) => s.group_name ?? '',
+      render: (s) => (
+        <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200/70">
+          {s.group_name}
+        </span>
+      )
+    },
+    {
+      key: 'p',
+      header: 'Telefon',
+      render: (s) =>
+        s.phone ? (
+          <span className="tabular-nums text-slate-700">{s.phone}</span>
+        ) : (
+          <span className="text-slate-400">—</span>
+        )
+    },
+    {
+      key: 'pp',
+      header: 'Ota-onasi telefoni',
+      render: (s) =>
+        s.parent_phone ? (
+          <span className="tabular-nums text-slate-700">{s.parent_phone}</span>
+        ) : (
+          <span className="text-slate-400">—</span>
+        )
+    }
   ];
-  if (isAdmin) cols.push({ key: 'a', header: '', className: 'text-right', render: (s) => (
-    <div className="flex justify-end gap-1"><Button variant="ghost" className="px-2 py-1" onClick={() => setEdit(s)}>Tahrirlash</Button><Button variant="ghost" className="px-2 py-1 text-red-600" onClick={() => remove(s)}>O'chirish</Button></div>
-  ) });
+
+  if (isAdmin) {
+    cols.push({
+      key: 'a',
+      header: '',
+      className: 'text-right',
+      render: (s) => (
+        <div className="flex justify-end gap-1.5">
+          <Button variant="ghost" className="px-2.5 py-1 text-xs" onClick={() => setEdit(s)}>
+            Tahrirlash
+          </Button>
+          <Button
+            variant="ghost"
+            className="px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+            onClick={() => remove(s)}
+          >
+            O&apos;chirish
+          </Button>
+        </div>
+      )
+    });
+  }
 
   return (
     <>
-      <PageHeader title="O'quvchilar" subtitle={`Jami: ${rows.length} ta`}
-        actions={<>
-          <SearchInput value={q} onChange={setQ} placeholder="F.I.Sh. bo'yicha qidirish..." />
-          {seeAll && (
-            <Select aria-label="Guruh" value={groupId} onChange={(e) => setGroupId(e.target.value)} className="sm:w-44">
-              <option value="">Barcha guruhlar</option>
-              {(groups.data ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-            </Select>
-          )}
-          {canCodes && <Button variant="secondary" onClick={() => setShowCodes(true)}>Ota-ona kodlari</Button>}
-          {isAdmin && <Button onClick={() => setEdit({ group_id: groupId || groups.data?.[0]?.id })}>+ O'quvchi qo'shish</Button>}
-        </>} />
+      <PageHeader
+        title="O'quvchilar"
+        subtitle={`Jami: ${rows.length} ta`}
+        actions={
+          <>
+            <SearchInput value={q} onChange={setQ} placeholder="F.I.Sh. bo'yicha qidirish..." />
+            {seeAll && (
+              <Select aria-label="Guruh" value={groupId} onChange={(e) => setGroupId(e.target.value)} className="sm:w-44">
+                <option value="">Barcha guruhlar</option>
+                {(groups.data ?? []).map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+            {canCodes && (
+              <Button variant="secondary" onClick={() => setShowCodes(true)}>
+                Ota-ona kodlari
+              </Button>
+            )}
+            {isAdmin && (
+              <Button onClick={() => setEdit({ group_id: groupId || groups.data?.[0]?.id })}>
+                + O&apos;quvchi qo&apos;shish
+              </Button>
+            )}
+          </>
+        }
+      />
+
       {students.error && <ErrorBox message={students.error} onRetry={students.reload} />}
+
       <DataTable columns={cols} rows={rows} rowKey={(s) => s.id} loading={students.loading} />
+
       {showCodes && <ParentCodesModal groupId={groupId} onClose={() => setShowCodes(false)} />}
+
       {edit && (
         <Modal title={edit.id ? "O'quvchi tahrirlash" : "Yangi o'quvchi"} onClose={() => setEdit(null)}>
           <div className="space-y-4">
-            <Field label="F.I.Sh."><Input value={edit.full_name ?? ''} onChange={(e) => setEdit({ ...edit, full_name: e.target.value })} /></Field>
-            <Field label="Guruh"><Select value={edit.group_id ?? ''} onChange={(e) => setEdit({ ...edit, group_id: e.target.value })}>{(groups.data ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</Select></Field>
-            <Field label="Telefon"><Input value={edit.phone ?? ''} onChange={(e) => setEdit({ ...edit, phone: e.target.value })} /></Field>
-            <Field label="Ota-onasi telefoni"><Input value={edit.parent_phone ?? ''} onChange={(e) => setEdit({ ...edit, parent_phone: e.target.value })} /></Field>
-            <div className="flex justify-end gap-2"><Button variant="secondary" onClick={() => setEdit(null)}>Bekor qilish</Button><Button onClick={save} disabled={!edit.full_name || !edit.group_id}>Saqlash</Button></div>
+            <Field label="F.I.Sh.">
+              <Input value={edit.full_name ?? ''} onChange={(e) => setEdit({ ...edit, full_name: e.target.value })} />
+            </Field>
+            <Field label="Guruh">
+              <Select value={edit.group_id ?? ''} onChange={(e) => setEdit({ ...edit, group_id: e.target.value })}>
+                {(groups.data ?? []).map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Telefon">
+              <Input value={edit.phone ?? ''} onChange={(e) => setEdit({ ...edit, phone: e.target.value })} />
+            </Field>
+            <Field label="Ota-onasi telefoni">
+              <Input
+                value={edit.parent_phone ?? ''}
+                onChange={(e) => setEdit({ ...edit, parent_phone: e.target.value })}
+              />
+            </Field>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="secondary" onClick={() => setEdit(null)}>
+                Bekor qilish
+              </Button>
+              <Button onClick={save} disabled={!edit.full_name || !edit.group_id}>
+                Saqlash
+              </Button>
+            </div>
           </div>
         </Modal>
       )}
+
       {toast && <Toast message={toast.m} tone={toast.t} />}
     </>
   );
