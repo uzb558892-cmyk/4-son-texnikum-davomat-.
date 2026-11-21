@@ -1,10 +1,13 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import Button from './Button';
+import { EmptyState, Loader } from './Feedback';
 
 export interface Column<T> {
   key: string;
   header: string;
   render: (row: T) => ReactNode;
+  sortBy?: (row: T) => string | number;
+  width?: string;
   className?: string;
 }
 
@@ -13,97 +16,111 @@ export default function DataTable<T>({
   rows,
   rowKey,
   loading,
-  empty = "Ma'lumot topilmadi",
-  pageSize = 10
+  empty,
+  emptyTitle,
+  emptyDescription,
+  pageSize = 25
 }: {
   columns: Column<T>[];
   rows: T[];
-  rowKey: (r: T) => string;
+  rowKey: (row: T) => string;
   loading?: boolean;
   empty?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
   pageSize?: number;
 }) {
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [asc, setAsc] = useState(true);
   const [page, setPage] = useState(0);
-  const pages = Math.max(1, Math.ceil(rows.length / pageSize));
-  useEffect(() => {
-    if (page >= pages) setPage(0);
-  }, [pages, page]);
-  const slice = rows.slice(page * pageSize, page * pageSize + pageSize);
-  const message = loading ? 'Yuklanmoqda...' : slice.length === 0 ? empty : null;
+
+  const sorted = useMemo(() => {
+    if (!sortKey) return rows;
+    const col = columns.find((c) => c.key === sortKey);
+    if (!col?.sortBy) return rows;
+    const by = col.sortBy;
+    return [...rows].sort((a, b) => {
+      const av = by(a);
+      const bv = by(b);
+      const d = typeof av === 'number' && typeof bv === 'number'
+        ? av - bv
+        : String(av).localeCompare(String(bv), 'uz');
+      return asc ? d : -d;
+    });
+  }, [rows, columns, sortKey, asc]);
+
+  if (loading) return <Loader />;
+  if (!rows.length) {
+    return (
+      <EmptyState
+        title={empty ?? emptyTitle ?? "Ma'lumot topilmadi"}
+        description={emptyDescription}
+      />
+    );
+  }
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const safePage = Math.min(page, totalPages - 1);
+  const slice = sorted.slice(safePage * pageSize, safePage * pageSize + pageSize);
+
+  const toggle = (key: string) => {
+    if (sortKey === key) setAsc(!asc);
+    else {
+      setSortKey(key);
+      setAsc(true);
+    }
+  };
 
   return (
-    <div className="card animate-fadeIn overflow-hidden">
-      {message ? (
-        <div className="px-4 py-12 text-center text-sm font-medium text-slate-400">{message}</div>
-      ) : (
-        <>
-          <div className="divide-y divide-slate-100 sm:hidden">
+    <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 bg-gradient-to-r from-slate-50 via-indigo-50/40 to-slate-50 text-[11px] font-bold tracking-wider text-slate-600 uppercase">
+              {columns.map((c) => (
+                <th
+                  key={c.key}
+                  style={{ width: c.width }}
+                  onClick={() => c.sortBy && toggle(c.key)}
+                  className={`px-3.5 py-3 whitespace-nowrap ${
+                    c.sortBy ? 'cursor-pointer select-none hover:text-indigo-700' : ''
+                  } ${c.className ?? ''}`}
+                >
+                  {c.header}
+                  {sortKey === c.key ? (asc ? ' ↑' : ' ↓') : ''}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
             {slice.map((r) => (
-              <div key={rowKey(r)} className="space-y-2.5 px-4 py-3.5 transition-colors hover:bg-slate-50/70">
+              <tr
+                key={rowKey(r)}
+                className="transition-colors duration-150 even:bg-slate-50/35 hover:bg-indigo-50/55"
+              >
                 {columns.map((c) => (
-                  <div key={c.key} className="flex items-start justify-between gap-3 text-sm">
-                    {c.header && (
-                      <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                        {c.header}
-                      </span>
-                    )}
-                    <span className="ml-auto min-w-0 text-right font-medium text-slate-800">{c.render(r)}</span>
-                  </div>
+                  <td key={c.key} className={`px-3.5 py-2.5 text-slate-700 ${c.className ?? ''}`}>
+                    {c.render(r)}
+                  </td>
                 ))}
-              </div>
+              </tr>
             ))}
-          </div>
-
-          <div className="hidden overflow-x-auto sm:block">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="border-b border-slate-200/80 bg-slate-50/90 text-slate-500">
-                <tr>
-                  {columns.map((c) => (
-                    <th
-                      key={c.key}
-                      scope="col"
-                      className={`whitespace-nowrap px-4 py-3 text-[11px] font-bold uppercase tracking-wider ${c.className ?? ''}`}
-                    >
-                      {c.header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {slice.map((r) => (
-                  <tr key={rowKey(r)} className="transition-colors duration-150 hover:bg-slate-50/90">
-                    {columns.map((c) => (
-                      <td key={c.key} className={`px-4 py-3.5 text-slate-700 ${c.className ?? ''}`}>
-                        {c.render(r)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-
-      {rows.length > pageSize && (
-        <div className="flex items-center justify-between border-t border-slate-200/80 bg-slate-50/40 px-4 py-2.5 text-xs font-medium text-slate-500 sm:text-sm">
-          <span className="tabular-nums">
-            {page * pageSize + 1}–{Math.min(rows.length, (page + 1) * pageSize)} / {rows.length}
+          </tbody>
+        </table>
+      </div>
+      {totalPages > 1 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs text-slate-600">
+          <span>
+            Jami <b>{sorted.length}</b> ta — {safePage + 1} / {totalPages} bet
           </span>
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              className="px-3 py-1 text-xs"
-              disabled={page === 0}
-              onClick={() => setPage(page - 1)}
-            >
+          <div className="flex gap-1.5">
+            <Button variant="secondary" disabled={safePage === 0} onClick={() => setPage((p) => p - 1)}>
               Oldingi
             </Button>
             <Button
               variant="secondary"
-              className="px-3 py-1 text-xs"
-              disabled={page >= pages - 1}
-              onClick={() => setPage(page + 1)}
+              disabled={safePage >= totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
             >
               Keyingi
             </Button>

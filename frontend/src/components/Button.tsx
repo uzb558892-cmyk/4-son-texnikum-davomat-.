@@ -1,33 +1,30 @@
-import type { ButtonHTMLAttributes } from 'react';
-import { cx } from '../utils/format';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
-const styles: Record<Variant, string> = {
+const VARIANT: Record<Variant, string> = {
   primary:
-    'bg-brand-700 text-white shadow-sm ring-1 ring-brand-800/15 hover:-translate-y-0.5 hover:bg-brand-800 hover:shadow-md disabled:translate-y-0 disabled:bg-slate-300 disabled:shadow-none disabled:ring-0',
+    'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-indigo-600/20 hover:from-blue-700 hover:to-indigo-700 focus-visible:ring-blue-500',
   secondary:
-    'bg-white text-slate-700 border border-slate-200 shadow-2xs hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 disabled:text-slate-400 disabled:shadow-none',
+    'border border-slate-200 bg-white text-slate-700 shadow-xs hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-slate-400',
   danger:
-    'bg-rose-600 text-white shadow-sm ring-1 ring-rose-700/15 hover:-translate-y-0.5 hover:bg-rose-700 hover:shadow-md disabled:translate-y-0 disabled:bg-slate-300 disabled:shadow-none disabled:ring-0',
+    'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-sm shadow-rose-600/20 hover:from-rose-700 hover:to-red-700 focus-visible:ring-rose-500',
   ghost:
-    'text-brand-700 hover:bg-brand-50/90 hover:text-brand-800 disabled:text-slate-400'
+    'text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-slate-300'
 };
 
 export default function Button({
   variant = 'primary',
-  className,
-  ...p
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
+  className = '',
+  children,
+  ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; children: ReactNode }) {
   return (
     <button
-      type="button"
-      {...p}
-      className={cx(
-        'inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100 sm:min-h-[38px]',
-        styles[variant],
-        className
-      )}
-    />
+      {...rest}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-45 ${VARIANT[variant]} ${className}`}
+    >
+      {children}
+    </button>
   );
 }
