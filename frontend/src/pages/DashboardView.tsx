@@ -29,6 +29,57 @@ interface LiveCounts {
   totals: { present: number; excused: number; unexcused: number; skipped: number };
 }
 
+type NormalizedStatus = 'present' | 'excused' | 'unexcused' | 'skipped' | 'other';
+
+function normalizeStatus(row: Record<string, any>): NormalizedStatus {
+  const raw = String(row.status ?? row.attendance_status ?? row.state ?? '')
+    .trim()
+    .toLowerCase();
+  const reason = String(row.reason ?? row.note ?? row.comment ?? '')
+    .trim()
+    .toLowerCase();
+
+  if (
+    raw === 'present' ||
+    raw === 'keldi' ||
+    raw === 'bor' ||
+    raw === '+' ||
+    raw === '1'
+  ) {
+    return 'present';
+  }
+  if (
+    raw === 'excused' ||
+    raw === 'sababli' ||
+    raw.includes('excus') ||
+    raw.includes('sabab')
+  ) {
+    return 'excused';
+  }
+  if (
+    raw === 'skipped' ||
+    raw === 'qochdi' ||
+    raw.includes('skip') ||
+    raw.includes('qoch')
+  ) {
+    return 'skipped';
+  }
+  if (
+    raw === 'unexcused' ||
+    raw === 'sababsiz' ||
+    raw === 'absent' ||
+    raw === '-' ||
+    raw.includes('unexcus') ||
+    raw.includes('absent')
+  ) {
+    if (reason.includes('sabab') || reason.includes('kasal') || reason.includes('spravka') || row.is_excused === true) {
+      return 'excused';
+    }
+    return 'unexcused';
+  }
+  return 'other';
+}
+
 export default function DashboardView({
   roleTitle,
   basePath,
@@ -66,7 +117,7 @@ export default function DashboardView({
         const client = db();
         let q = client
           .from('attendance')
-          .select('group_id, status')
+          .select('*')
           .eq('lesson_date', today);
         if (effectiveGroupId) q = q.eq('group_id', effectiveGroupId);
         const { data, error } = await q;
@@ -75,22 +126,23 @@ export default function DashboardView({
         const byGroup: LiveCounts['byGroup'] = {};
         const totals = { present: 0, excused: 0, unexcused: 0, skipped: 0 };
 
-        for (const r of (data ?? []) as Array<{ group_id: string; status: string }>) {
+        for (const r of (data ?? []) as Array<Record<string, any>>) {
           const gid = String(r.group_id ?? '');
           if (!gid) continue;
           if (!byGroup[gid]) {
             byGroup[gid] = { present: 0, excused: 0, unexcused: 0, skipped: 0 };
           }
-          if (r.status === 'present') {
+          const st = normalizeStatus(r);
+          if (st === 'present') {
             byGroup[gid].present += 1;
             totals.present += 1;
-          } else if (r.status === 'excused') {
+          } else if (st === 'excused') {
             byGroup[gid].excused += 1;
             totals.excused += 1;
-          } else if (r.status === 'unexcused') {
+          } else if (st === 'unexcused') {
             byGroup[gid].unexcused += 1;
             totals.unexcused += 1;
-          } else if (r.status === 'skipped') {
+          } else if (st === 'skipped') {
             byGroup[gid].skipped += 1;
             totals.skipped += 1;
           }
