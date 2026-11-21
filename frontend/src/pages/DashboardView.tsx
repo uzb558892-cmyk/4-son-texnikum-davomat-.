@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useAsync } from '../hooks/useAsync';
@@ -30,6 +30,7 @@ interface LiveCounts {
 }
 
 type AttendanceKind = 'present' | 'excused' | 'unexcused' | 'skipped';
+type GroupFilter = 'all' | 'alerts' | 'high';
 
 const PRIORITY: Record<AttendanceKind, number> = {
   present: 1,
@@ -89,6 +90,7 @@ export default function DashboardView({
 
   const stats = useAsync(() => dashboardService.stats(effectiveGroupId), [effectiveGroupId]);
   const groups = useAsync(() => groupsService.list(), []);
+  const [groupFilter, setGroupFilter] = useState<GroupFilter>('all');
   const [live, setLive] = useState<LiveCounts>({
     byGroup: {},
     totals: { present: 0, excused: 0, unexcused: 0, skipped: 0 }
@@ -106,7 +108,6 @@ export default function DashboardView({
         const { data, error } = await q;
         if (error) throw error;
 
-        // Har bir o'quvchi bo'yicha eng yuqori ustuvor holatni saqlaymiz (qochdi > sababsiz > sababli > keldi)
         const studentStateByGroup: Record<string, Record<string, AttendanceKind>> = {};
         const fallbackCounterByGroup: Record<
           string,
@@ -202,49 +203,60 @@ export default function DashboardView({
     if (key) byGroupMap.set(key, item);
   }
 
-  const groupRows: GroupSummaryRow[] = (groups.data ?? [])
-    .filter((g) => (!effectiveGroupId ? true : g.id === effectiveGroupId))
-    .map((g) => {
-      const rpcItem = byGroupMap.get(g.id) ?? {};
-      const liveItem = live.byGroup[g.id];
-      const studentsCount = Math.max(0, Number(rpcItem.students_count ?? groupStudentsById.get(g.id) ?? 0));
+  const groupRows: GroupSummaryRow[] = useMemo(() => {
+    return (groups.data ?? [])
+      .filter((g) => (!effectiveGroupId ? true : g.id === effectiveGroupId))
+      .map((g) => {
+        const rpcItem = byGroupMap.get(g.id) ?? {};
+        const liveItem = live.byGroup[g.id];
+        const studentsCount = Math.max(0, Number(rpcItem.students_count ?? groupStudentsById.get(g.id) ?? 0));
 
-      let present = liveItem ? liveItem.present : Number(rpcItem.present ?? 0);
-      let excused = liveItem ? liveItem.excused : Number(rpcItem.excused ?? 0);
-      let unexcused = liveItem ? liveItem.unexcused : Number(rpcItem.unexcused ?? 0);
-      let skipped = liveItem ? liveItem.skipped : Number(rpcItem.skipped ?? 0);
+        let present = liveItem ? liveItem.present : Number(rpcItem.present ?? 0);
+        let excused = liveItem ? liveItem.excused : Number(rpcItem.excused ?? 0);
+        let unexcused = liveItem ? liveItem.unexcused : Number(rpcItem.unexcused ?? 0);
+        let skipped = liveItem ? liveItem.skipped : Number(rpcItem.skipped ?? 0);
 
-      // Agar biror sabab bilan yig'indi guruhdagi o'quvchilar sonidan oshsa, o'quvchilar soniga mutanosib chegaralaymiz
-      const sum = present + excused + unexcused + skipped;
-      if (studentsCount > 0 && sum > studentsCount) {
-        const ratio = studentsCount / sum;
-        present = Math.floor(present * ratio);
-        excused = Math.floor(excused * ratio);
-        unexcused = Math.floor(unexcused * ratio);
-        skipped = Math.floor(skipped * ratio);
-        let rem = studentsCount - (present + excused + unexcused + skipped);
-        if (rem > 0 && liveItem) {
-          const addP = Math.min(rem, liveItem.present);
-          present += addP;
-          rem -= addP;
+        const sum = present + excused + unexcused + skipped;
+        if (studentsCount > 0 && sum > studentsCount) {
+          const ratio = studentsCount / sum;
+          present = Math.floor(present * ratio);
+          excused = Math.floor(excused * ratio);
+          unexcused = Math.floor(unexcused * ratio);
+          skipped = Math.floor(skipped * ratio);
+          let rem = studentsCount - (present + excused + unexcused + skipped);
+          if (rem > 0 && liveItem) {
+            const addP = Math.min(rem, liveItem.present);
+            present += addP;
+            rem -= addP;
+          }
         }
-      }
 
-      const markedTotal = present + excused + unexcused + skipped;
-      const denom = studentsCount > 0 ? Math.max(studentsCount, markedTotal) : markedTotal;
-      const computedRate = denom > 0 ? Math.min(100, Math.round((present / denom) * 100)) : 0;
+        const markedTotal = present + excused + unexcused + skipped;
+        const denom = studentsCount > 0 ? Math.max(studentsCount, markedTotal) : markedTotal;
+        const computedRate = denom > 0 ? Math.min(100, Math.round((present / denom) * 100)) : 0;
 
-      return {
-        group_id: g.id,
-        group_name: g.name,
-        students_count: studentsCount,
-        present,
-        excused,
-        unexcused,
-        skipped,
-        attendance_rate: computedRate
-      };
-    });
+        return {
+          group_id: g.id,
+          group_name: g.name,
+          students_count: studentsCount,
+          present,
+          excused,
+          unexcused,
+          skipped,
+          attendance_rate: computedRate
+        };
+      });
+  }, [groups.data, effectiveGroupId, byGroupMap, live.byGroup, groupStudentsById]);
+
+  const filteredGroupRows = useMemo(() => {
+    if (groupFilter === 'alerts') {
+      return groupRows.filter((r) => r.unexcused > 0 || r.skipped > 0);
+    }
+    if (groupFilter === 'high') {
+      return groupRows.filter((r) => r.attendance_rate >= 85);
+    }
+    return groupRows;
+  }, [groupRows, groupFilter]);
 
   const displayTotals = {
     present: live.totals.present || Number(d?.present ?? 0),
@@ -396,20 +408,58 @@ export default function DashboardView({
             />
           </div>
 
-          <div className="mb-2.5 flex items-center justify-between">
-            <h2 className="text-base font-bold tracking-tight text-slate-900">
-              Bugungi davomat — guruhlar kesimida
-            </h2>
-            <span className="text-xs font-medium text-slate-500">
-              {groupRows.length} ta guruh
-            </span>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-base font-bold tracking-tight text-slate-900">
+                Bugungi davomat — guruhlar kesimida
+              </h2>
+              <span className="text-xs font-medium text-slate-500">
+                {filteredGroupRows.length} / {groupRows.length} ta guruh
+              </span>
+            </div>
+
+            <div className="inline-flex rounded-xl border border-slate-200/90 bg-white p-1 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setGroupFilter('all')}
+                className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                  groupFilter === 'all'
+                    ? 'bg-indigo-600 text-white shadow-2xs'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                Barchasi
+              </button>
+              <button
+                type="button"
+                onClick={() => setGroupFilter('alerts')}
+                className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                  groupFilter === 'alerts'
+                    ? 'bg-rose-600 text-white shadow-2xs'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                Sababsiz / Qochdi
+              </button>
+              <button
+                type="button"
+                onClick={() => setGroupFilter('high')}
+                className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                  groupFilter === 'high'
+                    ? 'bg-emerald-600 text-white shadow-2xs'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                85%+ qatnashish
+              </button>
+            </div>
           </div>
           <DataTable
             columns={cols}
-            rows={groupRows}
+            rows={filteredGroupRows}
             rowKey={(r) => r.group_id}
             loading={groups.loading}
-            emptyTitle="Bugun hali davomat olinmagan"
+            emptyTitle="Tanlangan filtr bo'yicha guruh topilmadi"
           />
         </>
       )}

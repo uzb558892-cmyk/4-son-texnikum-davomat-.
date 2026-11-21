@@ -137,9 +137,9 @@ export default function AnnouncementsBoard() {
 
   return (
     <section className="card mb-6 overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-amber-50/70 via-white to-white px-4 py-3.5 sm:px-6 sm:py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 via-slate-50/50 to-white px-4 py-3.5 sm:px-6 sm:py-4">
         <div className="flex items-center gap-3">
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 ring-1 ring-amber-200/80">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-600/25">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M11 5L6 9H2v6h4l5 4V5z" />
               <path d="M15.54 8.46a5 5 0 010 7.07" />
@@ -149,7 +149,7 @@ export default function AnnouncementsBoard() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg">E&apos;lonlar taxtasi</h2>
-              <span className="tabular-nums rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200/70">
+              <span className="tabular-nums rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-bold text-indigo-700 ring-1 ring-indigo-200/80">
                 {items.length}
               </span>
             </div>
@@ -164,7 +164,7 @@ export default function AnnouncementsBoard() {
         {loading && !data ? (
           <div className="py-4"><Spinner /></div>
         ) : visibleItems.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-center text-sm text-slate-500">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-6 text-center text-sm text-slate-500">
             Hozircha e&apos;lonlar yo&apos;q.
           </div>
         ) : (
@@ -172,15 +172,17 @@ export default function AnnouncementsBoard() {
             {visibleItems.map((item, idx) => (
               <article
                 key={item.id}
-                className={`rounded-xl border p-4 transition-colors ${
-                  idx === 0 ? 'border-amber-200/90 bg-amber-50/35' : 'border-slate-200/80 bg-white hover:border-slate-300'
+                className={`rounded-xl border p-4 transition-all ${
+                  idx === 0
+                    ? 'border-indigo-200/90 bg-indigo-50/35 shadow-xs'
+                    : 'border-slate-200/85 bg-white hover:border-indigo-200 hover:bg-slate-50/40'
                 }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       {idx === 0 && (
-                        <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+                        <span className="rounded-md bg-indigo-600 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
                           Yangi
                         </span>
                       )}
@@ -212,7 +214,7 @@ export default function AnnouncementsBoard() {
                         key={`${item.id}-img-${i}`}
                         type="button"
                         onClick={() => setPreviewUrl(url)}
-                        className="group relative aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        className="group relative aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       >
                         <img
                           src={url}
@@ -229,7 +231,7 @@ export default function AnnouncementsBoard() {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span>Muallif:</span>
                     <strong className="font-semibold text-slate-800">{item.author_name}</strong>
-                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                    <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700 ring-1 ring-indigo-200/60">
                       {roleLabel(item.author_role)}
                     </span>
                   </div>
@@ -271,7 +273,7 @@ export default function AnnouncementsBoard() {
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 multiple
                 onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-                className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-brand-700 hover:file:bg-brand-100"
+                className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100"
               />
             </Field>
             <div className="flex justify-end gap-2">
@@ -307,7 +309,7 @@ export default function AnnouncementsBoard() {
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 multiple
                 onChange={(e) => setEditFiles(Array.from(e.target.files ?? []))}
-                className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-brand-700 hover:file:bg-brand-100"
+                className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100"
               />
             </Field>
             <div className="flex justify-end gap-2">
@@ -322,7 +324,7 @@ export default function AnnouncementsBoard() {
         <Modal title="Rasm ko'rinishi" onClose={() => setPreviewUrl(null)}>
           <div className="flex flex-col items-center gap-3">
             <img src={previewUrl} alt="Kattalashtirilgan rasm" className="max-h-[70vh] w-auto rounded-lg object-contain" />
-            <a href={previewUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-brand-600 underline">Asl hajmda ochish</a>
+            <a href={previewUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-indigo-600 underline">Asl hajmda ochish</a>
           </div>
         </Modal>
       )}
