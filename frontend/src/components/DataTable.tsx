@@ -42,9 +42,10 @@ export default function DataTable<T>({
     return [...rows].sort((a, b) => {
       const av = by(a);
       const bv = by(b);
-      const d = typeof av === 'number' && typeof bv === 'number'
-        ? av - bv
-        : String(av).localeCompare(String(bv), 'uz');
+      const d =
+        typeof av === 'number' && typeof bv === 'number'
+          ? av - bv
+          : String(av).localeCompare(String(bv), 'uz');
       return asc ? d : -d;
     });
   }, [rows, columns, sortKey, asc]);
@@ -76,27 +77,34 @@ export default function DataTable<T>({
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-gradient-to-r from-slate-50 via-indigo-50/40 to-slate-50 text-[11px] font-bold tracking-wider text-slate-600 uppercase">
-              {columns.map((c) => (
-                <th
-                  key={c.key}
-                  style={{ width: c.width }}
-                  onClick={() => c.sortBy && toggle(c.key)}
-                  className={`px-3.5 py-3 whitespace-nowrap ${
-                    c.sortBy ? 'cursor-pointer select-none hover:text-indigo-700' : ''
-                  } ${c.className ?? ''}`}
-                >
-                  {c.header}
-                  {sortKey === c.key ? (asc ? ' ↑' : ' ↓') : ''}
-                </th>
-              ))}
+            <tr className="border-b border-slate-200 bg-gradient-to-r from-slate-50 via-indigo-50/50 to-slate-50 text-[11px] font-bold tracking-wider text-slate-600 uppercase">
+              {columns.map((c) => {
+                const isSorted = sortKey === c.key;
+                return (
+                  <th
+                    key={c.key}
+                    style={{ width: c.width }}
+                    onClick={() => c.sortBy && toggle(c.key)}
+                    className={`px-3.5 py-3 whitespace-nowrap transition-colors ${
+                      c.sortBy ? 'cursor-pointer select-none hover:bg-indigo-100/50 hover:text-indigo-700' : ''
+                    } ${isSorted ? 'text-indigo-700' : ''} ${c.className ?? ''}`}
+                  >
+                    {c.header}
+                    {isSorted ? (
+                      <span className="ml-1 inline-block rounded bg-indigo-100 px-1 text-[10px] font-extrabold text-indigo-700">
+                        {asc ? '↑' : '↓'}
+                      </span>
+                    ) : null}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {slice.map((r) => (
               <tr
                 key={rowKey(r)}
-                className="transition-colors duration-150 even:bg-slate-50/35 hover:bg-indigo-50/55"
+                className="transition-colors duration-150 even:bg-slate-50/35 hover:bg-indigo-50/60"
               >
                 {columns.map((c) => (
                   <td key={c.key} className={`px-3.5 py-2.5 text-slate-700 ${c.className ?? ''}`}>
@@ -109,9 +117,10 @@ export default function DataTable<T>({
         </table>
       </div>
       {totalPages > 1 && (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs text-slate-600">
-          <span>
-            Jami <b>{sorted.length}</b> ta — {safePage + 1} / {totalPages} bet
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-slate-50/80 px-4 py-2.5 text-xs text-slate-600">
+          <span className="tabular-nums">
+            Jami <b className="text-slate-900">{sorted.length}</b> ta —{' '}
+            <b className="text-indigo-700">{safePage + 1}</b> / {totalPages} bet
           </span>
           <div className="flex gap-1.5">
             <Button variant="secondary" disabled={safePage === 0} onClick={() => setPage((p) => p - 1)}>

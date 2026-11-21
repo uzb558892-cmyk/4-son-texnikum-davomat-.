@@ -4,13 +4,13 @@ type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
 const VARIANT: Record<Variant, string> = {
   primary:
-    'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-indigo-600/20 hover:from-blue-700 hover:to-indigo-700 focus-visible:ring-blue-500',
+    'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-sm shadow-indigo-600/20 hover:from-indigo-700 hover:to-indigo-800 focus-visible:ring-indigo-500',
   secondary:
-    'border border-slate-200 bg-white text-slate-700 shadow-xs hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-slate-400',
+    'border border-slate-200 bg-white text-slate-700 shadow-2xs hover:border-indigo-200 hover:bg-indigo-50/40 hover:text-slate-900 focus-visible:ring-indigo-400',
   danger:
     'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-sm shadow-rose-600/20 hover:from-rose-700 hover:to-red-700 focus-visible:ring-rose-500',
   ghost:
-    'text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-slate-300'
+    'text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-indigo-300'
 };
 
 export default function Button({
