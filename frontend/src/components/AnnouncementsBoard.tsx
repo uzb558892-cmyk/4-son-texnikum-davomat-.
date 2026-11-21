@@ -139,7 +139,7 @@ export default function AnnouncementsBoard() {
     <section className="card mb-6 overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 via-slate-50/50 to-white px-4 py-3.5 sm:px-6 sm:py-4">
         <div className="flex items-center gap-3">
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-600/25">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-950 via-indigo-900 to-slate-900 text-amber-300 ring-1 ring-amber-400/35 shadow-sm">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M11 5L6 9H2v6h4l5 4V5z" />
               <path d="M15.54 8.46a5 5 0 010 7.07" />
@@ -174,7 +174,7 @@ export default function AnnouncementsBoard() {
                 key={item.id}
                 className={`rounded-xl border p-4 transition-all ${
                   idx === 0
-                    ? 'border-indigo-200/90 bg-indigo-50/35 shadow-xs'
+                    ? 'border-amber-300/70 bg-gradient-to-r from-indigo-50/55 via-white to-amber-50/35 shadow-xs'
                     : 'border-slate-200/85 bg-white hover:border-indigo-200 hover:bg-slate-50/40'
                 }`}
               >
@@ -182,7 +182,7 @@ export default function AnnouncementsBoard() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       {idx === 0 && (
-                        <span className="rounded-md bg-indigo-600 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+                        <span className="rounded-md bg-indigo-950 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-amber-300 ring-1 ring-amber-400/35">
                           Yangi
                         </span>
                       )}
@@ -231,7 +231,7 @@ export default function AnnouncementsBoard() {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span>Muallif:</span>
                     <strong className="font-semibold text-slate-800">{item.author_name}</strong>
-                    <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700 ring-1 ring-indigo-200/60">
+                    <span className="rounded-md bg-indigo-950/5 px-2 py-0.5 text-[11px] font-semibold text-indigo-900 ring-1 ring-indigo-200/80">
                       {roleLabel(item.author_role)}
                     </span>
                   </div>

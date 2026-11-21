@@ -88,7 +88,7 @@ export default function AppLayout() {
                 cx(
                   'group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-150',
                   isActive
-                    ? 'bg-white text-indigo-950 font-semibold shadow-md shadow-slate-950/25 ring-1 ring-white/80'
+                    ? 'bg-gradient-to-r from-indigo-500/30 via-indigo-400/20 to-amber-400/15 text-white font-semibold shadow-sm shadow-slate-950/40 ring-1 ring-amber-300/35'
                     : 'text-indigo-100/85 hover:bg-white/10 hover:text-white'
                 )
               }
@@ -137,9 +137,11 @@ export default function AppLayout() {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200/85 bg-white/95 px-4 py-3 shadow-2xs backdrop-blur-md sm:px-6">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-xs lg:hidden">
-                <Icon name="check" className="h-4 w-4" />
-              </span>
+              <img
+                src="/logo.png"
+                alt="4-son texnikum davomat logotipi"
+                className="h-8 w-8 shrink-0 rounded-lg object-cover ring-1 ring-amber-300/40 lg:hidden"
+              />
               <span className="truncate text-sm font-bold text-slate-900 lg:hidden">4-SON TEXNIKUM</span>
               <span className="hidden truncate text-sm font-semibold tracking-tight text-slate-700 lg:inline">{APP_NAME}</span>
             </div>
