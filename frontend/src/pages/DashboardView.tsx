@@ -19,6 +19,7 @@ interface GroupSummaryRow {
   excused: number;
   unexcused: number;
   skipped: number;
+  attendance_rate: number;
 }
 
 export default function DashboardView({
@@ -44,25 +45,58 @@ export default function DashboardView({
 
   const stats = useAsync(() => dashboardService.stats(effectiveGroupId), [effectiveGroupId]);
   const groups = useAsync(() => groupsService.list(), []);
-  const d = stats.data;
+  const d = stats.data as (Record<string, any> & {
+    present: number;
+    excused: number;
+    unexcused: number;
+    skipped: number;
+    warnings: number;
+  }) | null | undefined;
+
   const canShowGroups = propShowGroups !== undefined ? propShowGroups : user?.role !== 'group_leader';
   const totalGroups = groups.data?.length ?? 0;
   const groupNameById = new Map((groups.data ?? []).map((g) => [g.id, g.name]));
+  const groupStudentsById = new Map((groups.data ?? []).map((g) => [g.id, Number(g.student_count ?? 0)]));
   const leaderGroupName = effectiveGroupId ? groupNameById.get(effectiveGroupId) : undefined;
   const resolvedBase = basePath ?? (user?.role === 'group_leader' ? '/leader' : '/admin');
   const resolvedTitle = title ?? roleTitle ?? 'Boshqaruv paneli';
 
+  const rawByGroup: Array<Record<string, any>> = Array.isArray(d?.by_group)
+    ? d.by_group
+    : Array.isArray(d?.groups)
+    ? d.groups
+    : [];
+
+  const byGroupMap = new Map<string, Record<string, any>>();
+  for (const item of rawByGroup) {
+    const key = String(item.group_id ?? item.id ?? '');
+    if (key) byGroupMap.set(key, item);
+  }
+
   const groupRows: GroupSummaryRow[] = (groups.data ?? [])
     .filter((g) => (!effectiveGroupId ? true : g.id === effectiveGroupId))
-    .map((g) => ({
-      group_id: g.id,
-      group_name: g.name,
-      students_count: Number(g.student_count ?? 0),
-      present: 0,
-      excused: 0,
-      unexcused: 0,
-      skipped: 0
-    }));
+    .map((g) => {
+      const s = byGroupMap.get(g.id) ?? {};
+      const present = Number(s.present ?? 0);
+      const excused = Number(s.excused ?? 0);
+      const unexcused = Number(s.unexcused ?? 0);
+      const skipped = Number(s.skipped ?? 0);
+      const totalMarks = present + excused + unexcused + skipped;
+      const computedRate = totalMarks > 0 ? Math.round((present / totalMarks) * 100) : 0;
+      const rateRaw = s.attendance_rate ?? s.rate ?? computedRate;
+      const attendance_rate = Math.max(0, Math.min(100, Number(rateRaw) || 0));
+
+      return {
+        group_id: g.id,
+        group_name: g.name,
+        students_count: Number(s.students_count ?? groupStudentsById.get(g.id) ?? 0),
+        present,
+        excused,
+        unexcused,
+        skipped,
+        attendance_rate
+      };
+    });
 
   const cols: Column<GroupSummaryRow>[] = [
     {
@@ -121,6 +155,24 @@ export default function DashboardView({
           {r.skipped}
         </span>
       )
+    },
+    {
+      key: 'r',
+      header: 'Qatnashish',
+      sortBy: (r) => r.attendance_rate,
+      render: (r) => {
+        const rate = r.attendance_rate;
+        const barColor =
+          rate >= 85 ? 'bg-emerald-500' : rate >= 65 ? 'bg-amber-500' : 'bg-rose-500';
+        return (
+          <div className="flex min-w-[120px] items-center gap-2.5">
+            <div className="h-2 w-20 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200/60">
+              <div className={`h-full rounded-full ${barColor}`} style={{ width: `${rate}%` }} />
+            </div>
+            <span className="text-xs font-bold text-slate-800">{rate}%</span>
+          </div>
+        );
+      }
     }
   ];
 
