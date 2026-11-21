@@ -32,51 +32,77 @@ interface LiveCounts {
 type NormalizedStatus = 'present' | 'excused' | 'unexcused' | 'skipped' | 'other';
 
 function normalizeStatus(row: Record<string, any>): NormalizedStatus {
-  const raw = String(row.status ?? row.attendance_status ?? row.state ?? '')
-    .trim()
-    .toLowerCase();
-  const reason = String(row.reason ?? row.note ?? row.comment ?? '')
+  const candidates = [
+    row.status,
+    row.attendance_status,
+    row.state,
+    row.type,
+    row.kind,
+    row.absence_type,
+    row.mark
+  ]
+    .filter((v) => v !== undefined && v !== null)
+    .map((v) => String(v).trim().toLowerCase());
+
+  const reason = [row.reason, row.note, row.comment, row.excuse_reason]
+    .filter((v) => v !== undefined && v !== null)
+    .join(' ')
     .trim()
     .toLowerCase();
 
-  if (
-    raw === 'present' ||
-    raw === 'keldi' ||
-    raw === 'bor' ||
-    raw === '+' ||
-    raw === '1'
-  ) {
-    return 'present';
-  }
-  if (
-    raw === 'excused' ||
-    raw === 'sababli' ||
-    raw.includes('excus') ||
-    raw.includes('sabab')
-  ) {
-    return 'excused';
-  }
-  if (
-    raw === 'skipped' ||
-    raw === 'qochdi' ||
-    raw.includes('skip') ||
-    raw.includes('qoch')
-  ) {
-    return 'skipped';
-  }
-  if (
-    raw === 'unexcused' ||
-    raw === 'sababsiz' ||
-    raw === 'absent' ||
-    raw === '-' ||
-    raw.includes('unexcus') ||
-    raw.includes('absent')
-  ) {
-    if (reason.includes('sabab') || reason.includes('kasal') || reason.includes('spravka') || row.is_excused === true) {
+  for (const val of candidates) {
+    if (
+      val === 'present' ||
+      val === 'keldi' ||
+      val === 'bor' ||
+      val === 'qatnashdi' ||
+      val === '+' ||
+      val === '1' ||
+      val === 'true'
+    ) {
+      return 'present';
+    }
+    if (
+      val === 'excused' ||
+      val === 'sababli' ||
+      val.includes('excus') ||
+      val.includes('sabab')
+    ) {
       return 'excused';
     }
-    return 'unexcused';
+    if (
+      val === 'skipped' ||
+      val === 'qochdi' ||
+      val.includes('skip') ||
+      val.includes('qoch') ||
+      val.includes('truant') ||
+      val.includes('cut')
+    ) {
+      return 'skipped';
+    }
+    if (
+      val === 'unexcused' ||
+      val === 'sababsiz' ||
+      val === 'absent' ||
+      val === 'kelmadi' ||
+      val === '-' ||
+      val.includes('unexcus') ||
+      val.includes('absent') ||
+      val.includes('sababsiz')
+    ) {
+      if (
+        row.is_excused === true ||
+        val.includes('excused') ||
+        reason.includes('sabab') ||
+        reason.includes('kasal') ||
+        reason.includes('spravka')
+      ) {
+        return 'excused';
+      }
+      return 'unexcused';
+    }
   }
+
   return 'other';
 }
 
@@ -197,13 +223,17 @@ export default function DashboardView({
 
       const present = liveItem ? liveItem.present : Number(rpcItem.present ?? 0);
       const excused = liveItem ? liveItem.excused : Number(rpcItem.excused ?? 0);
-      const unexcused = liveItem ? liveItem.unexcused : Number(rpcItem.unexcused ?? 0);
-      const skipped = liveItem ? liveItem.skipped : Number(rpcItem.skipped ?? 0);
+      const unexcused = liveItem
+        ? Math.max(liveItem.unexcused, Number(rpcItem.unexcused ?? 0))
+        : Number(rpcItem.unexcused ?? 0);
+      const skipped = liveItem
+        ? Math.max(liveItem.skipped, Number(rpcItem.skipped ?? 0))
+        : Number(rpcItem.skipped ?? 0);
 
       const totalMarks = present + excused + unexcused + skipped;
       const computedRate = totalMarks > 0 ? Math.round((present / totalMarks) * 100) : 0;
       const rateRaw = rpcItem.attendance_rate ?? rpcItem.rate ?? computedRate;
-      const attendance_rate = liveItem
+      const attendance_rate = totalMarks > 0
         ? computedRate
         : Math.max(0, Math.min(100, Number(rateRaw) || 0));
 
