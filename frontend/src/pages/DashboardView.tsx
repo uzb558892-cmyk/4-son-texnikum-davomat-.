@@ -29,81 +29,41 @@ interface LiveCounts {
   totals: { present: number; excused: number; unexcused: number; skipped: number };
 }
 
-type NormalizedStatus = 'present' | 'excused' | 'unexcused' | 'skipped' | 'other';
+type AttendanceKind = 'present' | 'excused' | 'unexcused' | 'skipped';
 
-function normalizeStatus(row: Record<string, any>): NormalizedStatus {
-  const candidates = [
-    row.status,
-    row.attendance_status,
-    row.state,
-    row.type,
-    row.kind,
-    row.absence_type,
-    row.mark
-  ]
-    .filter((v) => v !== undefined && v !== null)
-    .map((v) => String(v).trim().toLowerCase());
+const PRIORITY: Record<AttendanceKind, number> = {
+  present: 1,
+  excused: 2,
+  unexcused: 3,
+  skipped: 4
+};
 
-  const reason = [row.reason, row.note, row.comment, row.excuse_reason]
-    .filter((v) => v !== undefined && v !== null)
-    .join(' ')
+function parseKind(row: Record<string, any>): AttendanceKind | null {
+  const raw = String(
+    row.status ?? row.attendance_status ?? row.state ?? row.type ?? row.mark ?? ''
+  )
     .trim()
     .toLowerCase();
 
-  for (const val of candidates) {
-    if (
-      val === 'present' ||
-      val === 'keldi' ||
-      val === 'bor' ||
-      val === 'qatnashdi' ||
-      val === '+' ||
-      val === '1' ||
-      val === 'true'
-    ) {
-      return 'present';
-    }
-    if (
-      val === 'excused' ||
-      val === 'sababli' ||
-      val.includes('excus') ||
-      val.includes('sabab')
-    ) {
-      return 'excused';
-    }
-    if (
-      val === 'skipped' ||
-      val === 'qochdi' ||
-      val.includes('skip') ||
-      val.includes('qoch') ||
-      val.includes('truant') ||
-      val.includes('cut')
-    ) {
-      return 'skipped';
-    }
-    if (
-      val === 'unexcused' ||
-      val === 'sababsiz' ||
-      val === 'absent' ||
-      val === 'kelmadi' ||
-      val === '-' ||
-      val.includes('unexcus') ||
-      val.includes('absent') ||
-      val.includes('sababsiz')
-    ) {
-      if (
-        row.is_excused === true ||
-        val.includes('excused') ||
-        reason.includes('sabab') ||
-        reason.includes('kasal') ||
-        reason.includes('spravka')
-      ) {
-        return 'excused';
-      }
-      return 'unexcused';
-    }
+  if (raw === 'skipped' || raw === 'qochdi' || raw.includes('skip') || raw.includes('qoch')) {
+    return 'skipped';
   }
-
-  return 'other';
+  if (
+    raw === 'unexcused' ||
+    raw === 'sababsiz' ||
+    raw === 'absent' ||
+    raw.includes('unexcus') ||
+    raw.includes('sababsiz')
+  ) {
+    return 'unexcused';
+  }
+  if (raw === 'excused' || raw === 'sababli' || raw.includes('excus') || raw.includes('sabab')) {
+    return 'excused';
+  }
+  if (raw === 'present' || raw === 'keldi' || raw === 'bor' || raw === '+') {
+    return 'present';
+  }
+  return null;
 }
 
 export default function DashboardView({
@@ -141,37 +101,64 @@ export default function DashboardView({
     (async () => {
       try {
         const client = db();
-        let q = client
-          .from('attendance')
-          .select('*')
-          .eq('lesson_date', today);
+        let q = client.from('attendance').select('*').eq('lesson_date', today);
         if (effectiveGroupId) q = q.eq('group_id', effectiveGroupId);
         const { data, error } = await q;
         if (error) throw error;
 
-        const byGroup: LiveCounts['byGroup'] = {};
-        const totals = { present: 0, excused: 0, unexcused: 0, skipped: 0 };
+        // Har bir o'quvchi bo'yicha eng yuqori ustuvor holatni saqlaymiz (qochdi > sababsiz > sababli > keldi)
+        const studentStateByGroup: Record<string, Record<string, AttendanceKind>> = {};
+        const fallbackCounterByGroup: Record<
+          string,
+          { present: number; excused: number; unexcused: number; skipped: number }
+        > = {};
 
         for (const r of (data ?? []) as Array<Record<string, any>>) {
           const gid = String(r.group_id ?? '');
-          if (!gid) continue;
-          if (!byGroup[gid]) {
-            byGroup[gid] = { present: 0, excused: 0, unexcused: 0, skipped: 0 };
+          const kind = parseKind(r);
+          if (!gid || !kind) continue;
+
+          const sid = String(r.student_id ?? r.pupil_id ?? '');
+          if (sid) {
+            if (!studentStateByGroup[gid]) studentStateByGroup[gid] = {};
+            const prev = studentStateByGroup[gid][sid];
+            if (!prev || PRIORITY[kind] > PRIORITY[prev]) {
+              studentStateByGroup[gid][sid] = kind;
+            }
+          } else {
+            if (!fallbackCounterByGroup[gid]) {
+              fallbackCounterByGroup[gid] = { present: 0, excused: 0, unexcused: 0, skipped: 0 };
+            }
+            fallbackCounterByGroup[gid][kind] += 1;
           }
-          const st = normalizeStatus(r);
-          if (st === 'present') {
-            byGroup[gid].present += 1;
-            totals.present += 1;
-          } else if (st === 'excused') {
-            byGroup[gid].excused += 1;
-            totals.excused += 1;
-          } else if (st === 'unexcused') {
-            byGroup[gid].unexcused += 1;
-            totals.unexcused += 1;
-          } else if (st === 'skipped') {
-            byGroup[gid].skipped += 1;
-            totals.skipped += 1;
+        }
+
+        const allGroupIds = new Set([
+          ...Object.keys(studentStateByGroup),
+          ...Object.keys(fallbackCounterByGroup)
+        ]);
+
+        const byGroup: LiveCounts['byGroup'] = {};
+        const totals = { present: 0, excused: 0, unexcused: 0, skipped: 0 };
+
+        for (const gid of allGroupIds) {
+          const counts = { present: 0, excused: 0, unexcused: 0, skipped: 0 };
+          const map = studentStateByGroup[gid] ?? {};
+          for (const kind of Object.values(map)) {
+            counts[kind] += 1;
           }
+          const fb = fallbackCounterByGroup[gid];
+          if (fb) {
+            counts.present += fb.present;
+            counts.excused += fb.excused;
+            counts.unexcused += fb.unexcused;
+            counts.skipped += fb.skipped;
+          }
+          byGroup[gid] = counts;
+          totals.present += counts.present;
+          totals.excused += counts.excused;
+          totals.unexcused += counts.unexcused;
+          totals.skipped += counts.skipped;
         }
 
         if (!cancelled) {
@@ -220,40 +207,50 @@ export default function DashboardView({
     .map((g) => {
       const rpcItem = byGroupMap.get(g.id) ?? {};
       const liveItem = live.byGroup[g.id];
+      const studentsCount = Math.max(0, Number(rpcItem.students_count ?? groupStudentsById.get(g.id) ?? 0));
 
-      const present = liveItem ? liveItem.present : Number(rpcItem.present ?? 0);
-      const excused = liveItem ? liveItem.excused : Number(rpcItem.excused ?? 0);
-      const unexcused = liveItem
-        ? Math.max(liveItem.unexcused, Number(rpcItem.unexcused ?? 0))
-        : Number(rpcItem.unexcused ?? 0);
-      const skipped = liveItem
-        ? Math.max(liveItem.skipped, Number(rpcItem.skipped ?? 0))
-        : Number(rpcItem.skipped ?? 0);
+      let present = liveItem ? liveItem.present : Number(rpcItem.present ?? 0);
+      let excused = liveItem ? liveItem.excused : Number(rpcItem.excused ?? 0);
+      let unexcused = liveItem ? liveItem.unexcused : Number(rpcItem.unexcused ?? 0);
+      let skipped = liveItem ? liveItem.skipped : Number(rpcItem.skipped ?? 0);
 
-      const totalMarks = present + excused + unexcused + skipped;
-      const computedRate = totalMarks > 0 ? Math.round((present / totalMarks) * 100) : 0;
-      const rateRaw = rpcItem.attendance_rate ?? rpcItem.rate ?? computedRate;
-      const attendance_rate = totalMarks > 0
-        ? computedRate
-        : Math.max(0, Math.min(100, Number(rateRaw) || 0));
+      // Agar biror sabab bilan yig'indi guruhdagi o'quvchilar sonidan oshsa, o'quvchilar soniga mutanosib chegaralaymiz
+      const sum = present + excused + unexcused + skipped;
+      if (studentsCount > 0 && sum > studentsCount) {
+        const ratio = studentsCount / sum;
+        present = Math.floor(present * ratio);
+        excused = Math.floor(excused * ratio);
+        unexcused = Math.floor(unexcused * ratio);
+        skipped = Math.floor(skipped * ratio);
+        let rem = studentsCount - (present + excused + unexcused + skipped);
+        if (rem > 0 && liveItem) {
+          const addP = Math.min(rem, liveItem.present);
+          present += addP;
+          rem -= addP;
+        }
+      }
+
+      const markedTotal = present + excused + unexcused + skipped;
+      const denom = studentsCount > 0 ? Math.max(studentsCount, markedTotal) : markedTotal;
+      const computedRate = denom > 0 ? Math.min(100, Math.round((present / denom) * 100)) : 0;
 
       return {
         group_id: g.id,
         group_name: g.name,
-        students_count: Number(rpcItem.students_count ?? groupStudentsById.get(g.id) ?? 0),
+        students_count: studentsCount,
         present,
         excused,
         unexcused,
         skipped,
-        attendance_rate
+        attendance_rate: computedRate
       };
     });
 
   const displayTotals = {
-    present: d ? Math.max(Number(d.present ?? 0), live.totals.present) : live.totals.present,
-    excused: d ? Math.max(Number(d.excused ?? 0), live.totals.excused) : live.totals.excused,
-    unexcused: d ? Math.max(Number(d.unexcused ?? 0), live.totals.unexcused) : live.totals.unexcused,
-    skipped: d ? Math.max(Number(d.skipped ?? 0), live.totals.skipped) : live.totals.skipped,
+    present: live.totals.present || Number(d?.present ?? 0),
+    excused: live.totals.excused || Number(d?.excused ?? 0),
+    unexcused: live.totals.unexcused || Number(d?.unexcused ?? 0),
+    skipped: live.totals.skipped || Number(d?.skipped ?? 0),
     warnings: Number(d?.warnings ?? 0)
   };
 
@@ -368,7 +365,7 @@ export default function DashboardView({
             <StatCard
               label="Bugun keldi"
               value={displayTotals.present}
-              sub="belgilangan paralar"
+              sub="belgilangan o'quvchilar"
               icon={<Icon name="check" />}
               tone="green"
             />
