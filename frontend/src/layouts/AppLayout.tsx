@@ -61,18 +61,18 @@ export default function AppLayout() {
     .join('');
 
   const sidebar = (
-    <nav className="flex h-full flex-col bg-gradient-to-b from-slate-900 via-brand-950 to-brand-900 text-brand-100 select-none">
+    <nav className="flex h-full flex-col bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 text-indigo-100 select-none">
       <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-brand-800 shadow-md ring-1 ring-white/30">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-950/50 ring-1 ring-white/20">
           <Icon name="check" />
         </div>
         <div className="min-w-0 leading-tight">
           <div className="truncate text-sm font-extrabold tracking-wide text-white">4-SON TEXNIKUM</div>
-          <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-brand-200/90">Davomat tizimi</div>
+          <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-indigo-300">Davomat tizimi</div>
         </div>
       </div>
 
-      <div className="px-4 pt-4 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-brand-300/75">
+      <div className="px-4 pt-4 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-indigo-300/75">
         Asosiy menyu
       </div>
 
@@ -86,8 +86,8 @@ export default function AppLayout() {
                 cx(
                   'group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-150',
                   isActive
-                    ? 'bg-white text-brand-900 shadow-md shadow-slate-950/20 font-semibold'
-                    : 'text-brand-100/85 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white text-indigo-950 font-semibold shadow-md shadow-slate-950/25 ring-1 ring-white/80'
+                    : 'text-indigo-100/85 hover:bg-white/10 hover:text-white'
                 )
               }
             >
@@ -99,13 +99,13 @@ export default function AppLayout() {
       </ul>
 
       <div className="border-t border-white/10 p-3 space-y-2">
-        <div className="flex items-center gap-2.5 rounded-xl bg-white/5 px-3 py-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-600/40 text-xs font-bold text-white ring-1 ring-white/15">
+        <div className="flex items-center gap-2.5 rounded-xl bg-white/5 px-3 py-2.5 ring-1 ring-white/10">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white shadow-2xs">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-xs font-semibold text-white">{user.full_name}</div>
-            <div className="truncate text-[11px] text-brand-200/80">{ROLE_LABEL[user.role]}</div>
+            <div className="truncate text-[11px] text-indigo-200/80">{ROLE_LABEL[user.role]}</div>
           </div>
         </div>
         <button
@@ -121,7 +121,7 @@ export default function AppLayout() {
   );
 
   return (
-    <div className="flex h-full flex-col bg-surface">
+    <div className="flex h-full flex-col bg-slate-50">
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-64 shrink-0 lg:block">{sidebar}</aside>
 
@@ -133,13 +133,13 @@ export default function AppLayout() {
         )}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-md sm:px-6">
+          <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200/85 bg-white/95 px-4 py-3 shadow-2xs backdrop-blur-md sm:px-6">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-700 text-white shadow-sm lg:hidden">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-xs lg:hidden">
                 <Icon name="check" className="h-4 w-4" />
               </span>
               <span className="truncate text-sm font-bold text-slate-900 lg:hidden">4-SON TEXNIKUM</span>
-              <span className="hidden truncate text-sm font-semibold tracking-tight text-slate-600 lg:inline">{APP_NAME}</span>
+              <span className="hidden truncate text-sm font-semibold tracking-tight text-slate-700 lg:inline">{APP_NAME}</span>
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
@@ -147,7 +147,7 @@ export default function AppLayout() {
                 <div className="text-sm font-semibold leading-tight text-slate-900">{user.full_name}</div>
                 <div className="text-xs font-medium text-slate-500">{ROLE_LABEL[user.role]}</div>
               </div>
-              <div className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-700 ring-1 ring-brand-200">
+              <div className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-700 ring-1 ring-indigo-200">
                 {initials}
               </div>
             </div>
@@ -173,7 +173,7 @@ export default function AppLayout() {
                 className={({ isActive }) =>
                   cx(
                     'flex min-h-[56px] flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium transition-colors',
-                    isActive ? 'text-brand-700 font-semibold' : 'text-slate-500 hover:text-slate-800'
+                    isActive ? 'text-indigo-700 font-semibold' : 'text-slate-500 hover:text-slate-800'
                   )
                 }
               >

@@ -18,9 +18,9 @@ const TONE: Record<
     valueText: 'text-slate-900'
   },
   blue: {
-    topBar: 'from-blue-500 to-indigo-600',
-    iconBox: 'bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-700 ring-1 ring-blue-200/80',
-    ring: 'hover:border-blue-300',
+    topBar: 'from-indigo-500 to-indigo-700',
+    iconBox: 'bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-700 ring-1 ring-indigo-200/80',
+    ring: 'hover:border-indigo-300',
     valueText: 'text-slate-900'
   },
   green: {
@@ -67,10 +67,10 @@ export default function StatCard({
     <div
       className={`group relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${t.ring}`}
     >
-      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${t.topBar} opacity-90`} />
+      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${t.topBar} opacity-95`} />
       <div className="flex items-start justify-between gap-3 pt-0.5">
         <div className="min-w-0">
-          <div className={`text-2xl font-bold tracking-tight sm:text-[26px] ${t.valueText}`}>{value}</div>
+          <div className={`tabular-nums text-2xl font-bold tracking-tight sm:text-[26px] ${t.valueText}`}>{value}</div>
           <div className="mt-0.5 text-sm font-semibold text-slate-700">{label}</div>
           {sub && <div className="mt-1 text-xs text-slate-500">{sub}</div>}
         </div>
