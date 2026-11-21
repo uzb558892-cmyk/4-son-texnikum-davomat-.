@@ -37,9 +37,11 @@ export default function Login() {
         <div className="pointer-events-none absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-sky-500/15 blur-3xl" aria-hidden />
 
         <div className="relative flex items-center gap-3.5">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-950/50 ring-1 ring-white/15">
-            <Icon name="check" className="h-6 w-6" />
-          </span>
+          <img
+            src="/logo.png"
+            alt="4-son texnikum davomat logotipi"
+            className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow-lg shadow-indigo-950/50 ring-1 ring-amber-300/40"
+          />
           <div className="text-base font-bold leading-tight tracking-tight">
             4-SON TEXNIKUM
             <br />

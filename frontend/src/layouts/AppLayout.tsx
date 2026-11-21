@@ -63,9 +63,11 @@ export default function AppLayout() {
   const sidebar = (
     <nav className="flex h-full flex-col bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 text-indigo-100 select-none">
       <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-950/50 ring-1 ring-white/20">
-          <Icon name="check" />
-        </div>
+        <img
+          src="/logo.png"
+          alt="4-son texnikum davomat logotipi"
+          className="h-11 w-11 shrink-0 rounded-xl object-cover shadow-md shadow-indigo-950/50 ring-1 ring-amber-300/40"
+        />
         <div className="min-w-0 leading-tight">
           <div className="truncate text-sm font-extrabold tracking-wide text-white">4-SON TEXNIKUM</div>
           <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-indigo-300">Davomat tizimi</div>
