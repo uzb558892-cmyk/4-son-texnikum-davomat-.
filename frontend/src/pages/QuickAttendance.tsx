@@ -111,14 +111,14 @@ export default function QuickAttendance() {
   }
 
   if (!dutyReady) {
-    return <div className="py-10 text-center text-sm text-slate-400">Tekshirilmoqda...</div>;
+    return <div className="card py-10 text-center text-sm font-medium text-slate-500">Tekshirilmoqda...</div>;
   }
 
   if (!allowed) {
     return (
       <>
         <PageHeader title="Davomat belgilash" subtitle="Navbatchi va administrator uchun tezkor davomat" />
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm font-medium text-amber-900">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-5 text-sm font-medium text-amber-900 shadow-2xs">
           Bugun sizning navbatchilik kuningiz emas. Bu sahifa faqat siz navbatchi etib belgilangan kunda ochiladi.
         </div>
       </>
@@ -132,7 +132,7 @@ export default function QuickAttendance() {
         subtitle="Guruhni tanlang va o'quvchilarning bor yoki yo'qligini belgilang"
       />
 
-      <div className="mb-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+      <div className="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
         <Field label="Sana">
           <Input
             type="date"
@@ -175,17 +175,17 @@ export default function QuickAttendance() {
         />
       )}
 
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+      <div className="card mb-4 flex flex-wrap items-center gap-2.5 px-4 py-3 text-xs">
+        <span className="tabular-nums rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200/80">
           Bor: {presentCount}
         </span>
-        <span className="rounded-full bg-red-50 px-2.5 py-1 font-medium text-red-700 ring-1 ring-inset ring-red-200">
+        <span className="tabular-nums rounded-full bg-rose-50 px-3 py-1 font-semibold text-rose-700 ring-1 ring-inset ring-rose-200/80">
           Yo&apos;q: {absentCount}
         </span>
-        <span className="text-slate-500">
+        <span className="tabular-nums rounded-full bg-indigo-50/80 px-3 py-1 font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200/70">
           Belgilandi: {marked} / {total}
         </span>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap gap-2">
           <Button variant="secondary" onClick={markAllPresent} disabled={!total}>
             Hammasi bor
           </Button>
@@ -195,11 +195,11 @@ export default function QuickAttendance() {
         </div>
       </div>
 
-      <ul className="space-y-2">
+      <ul className="space-y-2.5">
         {students.loading || existing.loading ? (
-          <li className="py-10 text-center text-sm text-slate-400">Yuklanmoqda...</li>
+          <li className="card py-10 text-center text-sm font-medium text-slate-400">Yuklanmoqda...</li>
         ) : list.length === 0 ? (
-          <li className="py-10 text-center text-sm text-slate-400">O&apos;quvchilar topilmadi</li>
+          <li className="card py-10 text-center text-sm font-medium text-slate-400">O&apos;quvchilar topilmadi</li>
         ) : (
           list.map((s, i) => {
             const m = marks[s.id];
@@ -207,20 +207,24 @@ export default function QuickAttendance() {
               <li
                 key={s.id}
                 className={cx(
-                  'rounded-xl border bg-white p-3 shadow-sm',
-                  m ? 'border-slate-200' : 'border-dashed border-slate-300'
+                  'rounded-2xl border bg-white p-3.5 shadow-2xs transition-all duration-150 hover:shadow-sm',
+                  m === 'present'
+                    ? 'border-emerald-200/80 hover:border-emerald-300'
+                    : m === 'unexcused'
+                      ? 'border-rose-200/80 hover:border-rose-300'
+                      : 'border-dashed border-slate-300 hover:border-indigo-300'
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <span className="w-6 text-right text-sm text-slate-400">{i + 1}</span>
+                    <span className="tabular-nums w-6 text-right text-xs font-bold text-slate-400">{i + 1}</span>
                     <span
                       className={cx(
-                        'h-8 w-1 rounded-full',
-                        m === 'present' ? 'bg-emerald-500' : m === 'unexcused' ? 'bg-red-500' : 'bg-slate-200'
+                        'h-8 w-1 shrink-0 rounded-full transition-colors',
+                        m === 'present' ? 'bg-emerald-500' : m === 'unexcused' ? 'bg-rose-500' : 'bg-slate-200'
                       )}
                     />
-                    <span className="truncate font-semibold text-slate-800">{s.full_name}</span>
+                    <span className="truncate text-sm font-semibold text-slate-900">{s.full_name}</span>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <button
@@ -228,10 +232,10 @@ export default function QuickAttendance() {
                       onClick={() => setMark(s.id, 'present')}
                       aria-pressed={m === 'present'}
                       className={cx(
-                        'min-w-[74px] rounded-lg border px-3.5 py-2 text-xs font-bold transition-colors',
+                        'min-w-[76px] rounded-xl border px-3.5 py-2 text-xs font-bold transition-all duration-150',
                         m === 'present'
-                          ? 'border-emerald-600 bg-emerald-600 text-white'
-                          : 'border-slate-300 bg-white text-slate-700 hover:bg-emerald-50'
+                          ? 'border-emerald-600 bg-emerald-600 text-white shadow-xs shadow-emerald-600/20'
+                          : 'border-slate-200 bg-slate-50/60 text-slate-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800'
                       )}
                     >
                       Bor
@@ -241,10 +245,10 @@ export default function QuickAttendance() {
                       onClick={() => setMark(s.id, 'unexcused')}
                       aria-pressed={m === 'unexcused'}
                       className={cx(
-                        'min-w-[74px] rounded-lg border px-3.5 py-2 text-xs font-bold transition-colors',
+                        'min-w-[76px] rounded-xl border px-3.5 py-2 text-xs font-bold transition-all duration-150',
                         m === 'unexcused'
-                          ? 'border-red-600 bg-red-600 text-white'
-                          : 'border-slate-300 bg-white text-slate-700 hover:bg-red-50'
+                          ? 'border-rose-600 bg-rose-600 text-white shadow-xs shadow-rose-600/20'
+                          : 'border-slate-200 bg-slate-50/60 text-slate-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-800'
                       )}
                     >
                       Yo&apos;q

@@ -13,7 +13,7 @@ import type { AttendanceRecord, AttendanceStatus, SkipAfter } from '../types';
 
 interface Mark { status: AttendanceStatus; skip_after: SkipAfter | null }
 
-const BOX = 'mb-4 rounded-lg border px-4 py-3 text-sm font-medium';
+const BOX = 'mb-4 rounded-2xl border px-4 py-3 text-sm font-medium shadow-2xs';
 
 export default function Attendance() {
   const { user } = useAuth();
@@ -82,10 +82,11 @@ export default function Attendance() {
     <>
       <PageHeader title="Davomat" subtitle={canEdit ? "Sana, guruh va parani tanlab, o'quvchilarni belgilang" : "Davomatni ko'rish"} />
       {dutyReady && (meOnDuty
-        ? <div className={`${BOX} border-emerald-200 bg-emerald-50 text-emerald-800`}>Bugun sizning navbatchilik kuningiz. Davomat belgilashingiz mumkin.</div>
-        : <div className={`${BOX} border-amber-200 bg-amber-50 text-amber-800`}>Bugun sizning navbatchilik kuningiz emas. Davomatni faqat ko'rishingiz mumkin.</div>)}
-      {(role === 'manaviyatchi' || role === 'direktor') && <div className={`${BOX} border-slate-200 bg-white text-slate-700`}>Siz davomatni faqat ko'ra olasiz.</div>}
-      <div className="mb-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+        ? <div className={`${BOX} border-emerald-200 bg-emerald-50/90 text-emerald-800`}>Bugun sizning navbatchilik kuningiz. Davomat belgilashingiz mumkin.</div>
+        : <div className={`${BOX} border-amber-200 bg-amber-50/90 text-amber-900`}>Bugun sizning navbatchilik kuningiz emas. Davomatni faqat ko'rishingiz mumkin.</div>)}
+      {(role === 'manaviyatchi' || role === 'direktor') && <div className={`${BOX} border-indigo-200/80 bg-indigo-50/50 text-slate-700`}>Siz davomatni faqat ko'ra olasiz.</div>}
+
+      <div className="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
         <Field label="Sana"><Input type="date" value={date} disabled={isDuty} onChange={(e) => e.target.value && setDate(e.target.value)} /></Field>
         <Field label="Guruh">
           <Select value={groupId} disabled={!seeAll} onChange={(e) => setGroupId(e.target.value)}>
@@ -100,45 +101,45 @@ export default function Attendance() {
 
       {(students.error || existing.error || duty.error) && <ErrorBox message={(students.error || existing.error || duty.error) as string} onRetry={() => { students.reload(); existing.reload(); duty.reload(); }} />}
 
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
-        {counts.map(({ s, n }) => <span key={s} className={`rounded-full px-2.5 py-1 font-medium ring-1 ring-inset ${STATUS_META[s].badge}`}>{STATUS_META[s].label}: {n}</span>)}
-        <span className="text-slate-500">Belgilandi: {marked} / {total}</span>
+      <div className="card mb-4 flex flex-wrap items-center gap-2 px-4 py-3 text-xs">
+        {counts.map(({ s, n }) => <span key={s} className={`tabular-nums rounded-full px-2.5 py-1 font-semibold ring-1 ring-inset ${STATUS_META[s].badge}`}>{STATUS_META[s].label}: {n}</span>)}
+        <span className="tabular-nums rounded-full bg-indigo-50/80 px-2.5 py-1 font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200/70">Belgilandi: {marked} / {total}</span>
         {canEdit && (
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex flex-wrap gap-2">
             {role === 'admin' && <Button variant="secondary" onClick={allPresent} disabled={!total}>Hammasi keldi</Button>}
             <Button onClick={save} disabled={saving || marked === 0}>{saving ? 'Saqlanmoqda...' : 'Saqlash'}</Button>
           </div>
         )}
       </div>
 
-      <ul className="space-y-2">
-        {students.loading || existing.loading ? <li className="py-10 text-center text-sm text-slate-400">Yuklanmoqda...</li> :
-          list.length === 0 ? <li className="py-10 text-center text-sm text-slate-400">O'quvchilar topilmadi</li> :
+      <ul className="space-y-2.5">
+        {students.loading || existing.loading ? <li className="card py-10 text-center text-sm font-medium text-slate-400">Yuklanmoqda...</li> :
+          list.length === 0 ? <li className="card py-10 text-center text-sm font-medium text-slate-400">O'quvchilar topilmadi</li> :
           list.map((s, i) => {
             const m = marks[s.id];
             return (
-              <li key={s.id} className={cx('rounded-xl border bg-white p-3 shadow-sm', m ? 'border-slate-200' : 'border-dashed border-slate-300')}>
+              <li key={s.id} className={cx('rounded-2xl border bg-white p-3.5 shadow-2xs transition-all duration-150 hover:shadow-sm', m ? 'border-slate-200/90 hover:border-indigo-200' : 'border-dashed border-slate-300 hover:border-indigo-300')}>
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <span className="w-6 text-right text-sm text-slate-400">{i + 1}</span>
-                    <span className={cx('h-8 w-1 rounded-full', m ? STATUS_META[m.status].dot : 'bg-slate-200')} />
-                    <span className="truncate font-semibold">{s.full_name}</span>
+                    <span className="tabular-nums w-6 text-right text-xs font-bold text-slate-400">{i + 1}</span>
+                    <span className={cx('h-8 w-1 shrink-0 rounded-full transition-colors', m ? STATUS_META[m.status].dot : 'bg-slate-200')} />
+                    <span className="truncate text-sm font-semibold text-slate-900">{s.full_name}</span>
                   </div>
                   <div className={cx('grid grid-cols-2 gap-2', role === 'group_leader' ? 'sm:grid-cols-2' : 'sm:grid-cols-4')}>
                     {visibleStatuses.map((st) => (
                       <button key={st} onClick={() => set(s.id, st)} disabled={!canEdit} aria-pressed={m?.status === st}
-                        className={cx('rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60', m?.status === st ? STATUS_META[st].active : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50')}>
+                        className={cx('rounded-xl border px-3 py-2 text-xs font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60', m?.status === st ? STATUS_META[st].active : 'border-slate-200 bg-slate-50/50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50/40 hover:text-slate-900')}>
                         {STATUS_META[st].label}
                       </button>
                     ))}
                   </div>
                 </div>
                 {m?.status === 'skipped' && (
-                  <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-violet-50 px-3 py-2 text-sm text-violet-800">
-                    <span className="font-medium">Qachon qochdi:</span>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-violet-200/70 bg-violet-50/80 px-3.5 py-2.5 text-sm text-violet-900">
+                    <span className="text-xs font-semibold">Qachon qochdi:</span>
                     {([1, 2, 3] as SkipAfter[]).map((n) => (
                       <button key={n} onClick={() => setSkip(s.id, n)} disabled={!canEdit} aria-pressed={m.skip_after === n}
-                        className={cx('rounded-md border px-3 py-1 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60', m.skip_after === n ? 'border-violet-600 bg-violet-600 text-white' : 'border-violet-300 bg-white text-violet-700')}>
+                        className={cx('rounded-lg border px-3 py-1 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60', m.skip_after === n ? 'border-violet-600 bg-violet-600 text-white shadow-2xs' : 'border-violet-200 bg-white text-violet-700 hover:bg-violet-100/60')}>
                         {n}-paradan keyin
                       </button>
                     ))}
