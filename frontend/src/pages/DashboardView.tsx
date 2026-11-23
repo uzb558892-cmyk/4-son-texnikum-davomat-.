@@ -67,14 +67,14 @@ function parseKind(row: Record<string, any>): AttendanceKind | null {
   return null;
 }
 
-const DUAL_EXTRA_GROUPS = new Set([54, 57, 58, 59, 61, 62]);
+const DUAL_GROUPS = new Set([40, 41, 45, 48, 49, 54, 57, 58, 59, 61, 62]);
 
 function isDualGroup(groupName: string): boolean {
   const match = String(groupName ?? "").match(/\d+/);
   if (!match) return false;
   const num = Number(match[0]);
   if (Number.isNaN(num)) return false;
-  return num >= 40 || DUAL_EXTRA_GROUPS.has(num);
+  return DUAL_GROUPS.has(num);
 }
 
 function isDualAttendanceDayTashkent(date = new Date()): boolean {
