@@ -67,6 +67,24 @@ function parseKind(row: Record<string, any>): AttendanceKind | null {
   return null;
 }
 
+const DUAL_EXTRA_GROUPS = new Set([54, 57, 58, 59, 61, 62]);
+
+function isDualGroup(groupName: string): boolean {
+  const match = String(groupName ?? "").match(/\d+/);
+  if (!match) return false;
+  const num = Number(match[0]);
+  if (Number.isNaN(num)) return false;
+  return num >= 40 || DUAL_EXTRA_GROUPS.has(num);
+}
+
+function isDualAttendanceDayTashkent(date = new Date()): boolean {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tashkent",
+    weekday: "short"
+  }).format(date);
+  return weekday === "Thu" || weekday === "Fri" || weekday === "Sat";
+}
+
 export default function DashboardView({
   roleTitle,
   basePath,
@@ -203,9 +221,12 @@ export default function DashboardView({
     if (key) byGroupMap.set(key, item);
   }
 
+  const showDualToday = useMemo(() => isDualAttendanceDayTashkent(new Date()), []);
+
   const groupRows: GroupSummaryRow[] = useMemo(() => {
     return (groups.data ?? [])
       .filter((g) => (!effectiveGroupId ? true : g.id === effectiveGroupId))
+      .filter((g) => (isDualGroup(g.name) ? showDualToday : true))
       .map((g) => {
         const rpcItem = byGroupMap.get(g.id) ?? {};
         const liveItem = live.byGroup[g.id];
@@ -246,7 +267,7 @@ export default function DashboardView({
           attendance_rate: computedRate
         };
       });
-  }, [groups.data, effectiveGroupId, byGroupMap, live.byGroup, groupStudentsById]);
+  }, [groups.data, effectiveGroupId, showDualToday, byGroupMap, live.byGroup, groupStudentsById]);
 
   const filteredGroupRows = useMemo(() => {
     if (groupFilter === 'alerts') {
