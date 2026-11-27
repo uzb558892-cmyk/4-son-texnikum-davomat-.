@@ -7,20 +7,20 @@ import Button from './Button';
 
 /** Ogohlantirish xati HTML matni (backenddan kelgan soatlar ishlatiladi). */
 export function letterHtml(w: StudentWarning): string {
-  const rows = w.absences.slice(0, 15)
-    .map((a) => `<tr><td>${escapeHtml(formatDate(a.date))}</td><td>${a.lesson}-para</td><td>${escapeHtml(STATUS_META[a.status].label)}</td></tr>`).join('');
+  const parentLine = w.parent_phone
+    ? ` (ota-onasi tel.: ${escapeHtml(w.parent_phone)})`
+    : "";
+  const hours = w.unexcused_hours;
+
   return `
     <h1>OGOHLANTIRISH XATI</h1>
     <p class="muted">4-son texnikum &nbsp;|&nbsp; ${escapeHtml(formatDate(todayISO()))}</p>
-    <p><b>Kimga:</b> ${escapeHtml(w.group_name)} guruhi o'quvchisi <b>${escapeHtml(w.student_name)}</b>${w.parent_phone ? ` (ota-onasi tel.: ${escapeHtml(w.parent_phone)})` : ''}</p>
-    <p>Davomat hisobiga ko'ra, siz jami <b>${w.unexcused_hours} soat</b> dars mashg'ulotlarini uzrli sababsiz qoldirgansiz
-    (belgilangan chegara: ${w.threshold_hours} soat). Oxirgi qoldirilgan sana: ${escapeHtml(formatDate(w.last_absence_date))}.</p>
-    <h2>Qoldirilgan darslar (oxirgilari)</h2>
-    <table><thead><tr><th>Sana</th><th>Para</th><th>Holat</th></tr></thead><tbody>${rows}</tbody></table>
-    <p>Sizdan darslarga muntazam qatnashish va qoldirilgan darslar uchun asoslantiruvchi hujjat taqdim etish talab etiladi.
-    Aks holda texnikum ichki tartib qoidalariga muvofiq chora ko'riladi.</p>
+    <p><b>Hurmatli ota-ona (qonuniy vakil)!</b></p>
+    <p>Sizga ma'lum qilamizki, <b>${escapeHtml(w.group_name)}</b> guruhi o'quvchisi <b>${escapeHtml(w.student_name)}</b>${parentLine} joriy o'quv davomida <b>${hours} soat</b> (belgilangan <b>${w.threshold_hours} soat</b> chegaradan ortiq) dars mashg'ulotlarida uzrli sababsiz qatnashmadi.</p>
+    <p>Farzandingizning darslarga muntazam qatnashmasligi va nazoratsiz qoldirilishi yuzasidan ota-onaga nisbatan belgilangan tartibda <b>ma'muriy chora</b> ko'rilishi hamda o'quvchiga nisbatan texnikum ichki tartib qoidalariga muvofiq tegishli intizomiy choralar qo'llanilishi mumkinligi haqida rasman ogohlantiramiz.</p>
+    <p>Iltimos, zudlik bilan farzandingizni darslarga qatnashishini ta'minlang va texnikum ma'muriyati / guruh rahbari bilan bog'laning.</p>
     <p class="sign">Texnikum ma'muriyati: ______________________ &nbsp;&nbsp; Sana: ____________</p>
-    <p class="sign">O'quvchi / ota-onasi bilan tanishdim: ______________________</p>`;
+    <p class="sign">Ota-ona / qonuniy vakil imzosi: ______________________</p>`;
 }
 
 export default function WarningLetter({ w }: { w: StudentWarning }) {
