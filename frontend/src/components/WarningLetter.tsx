@@ -10,17 +10,14 @@ export function letterHtml(w: StudentWarning): string {
   const parentLine = w.parent_phone
     ? ` (ota-onasi tel.: ${escapeHtml(w.parent_phone)})`
     : "";
-  const hours = w.unexcused_hours;
 
   return `
     <h1>OGOHLANTIRISH XATI</h1>
     <p class="muted">4-son texnikum &nbsp;|&nbsp; ${escapeHtml(formatDate(todayISO()))}</p>
-    <p><b>Hurmatli ota-ona (qonuniy vakil)!</b></p>
-    <p>Sizga ma'lum qilamizki, <b>${escapeHtml(w.group_name)}</b> guruhi o'quvchisi <b>${escapeHtml(w.student_name)}</b>${parentLine} joriy o'quv davomida <b>${hours} soat</b> (belgilangan <b>${w.threshold_hours} soat</b> chegaradan ortiq) dars mashg'ulotlarida uzrli sababsiz qatnashmadi.</p>
-    <p>Farzandingizning darslarga muntazam qatnashmasligi va nazoratsiz qoldirilishi yuzasidan ota-onaga nisbatan belgilangan tartibda <b>ma'muriy chora</b> ko'rilishi hamda o'quvchiga nisbatan texnikum ichki tartib qoidalariga muvofiq tegishli intizomiy choralar qo'llanilishi mumkinligi haqida rasman ogohlantiramiz.</p>
-    <p>Iltimos, zudlik bilan farzandingizni darslarga qatnashishini ta'minlang va texnikum ma'muriyati / guruh rahbari bilan bog'laning.</p>
-    <p class="sign">Texnikum ma'muriyati: ______________________ &nbsp;&nbsp; Sana: ____________</p>
-    <p class="sign">Ota-ona / qonuniy vakil imzosi: ______________________</p>`;
+    <p><b>${escapeHtml(w.group_name)}</b> guruhi o'quvchisi <b>${escapeHtml(w.student_name)}</b>${parentLine}ning ota-onasiga!</p>
+    <p>Sizning farzandingiz <b>${escapeHtml(w.student_name)}</b> <b>72 soatdan ortiq</b> (jami <b>${w.unexcused_hours} soat</b>) dars mashg'ulotlarida qatnashmadi.</p>
+    <p>Ushbu holat bo'yicha sizga <b>belgilangan tartibda chora ko'ramiz</b>. Farzandingizni zudlik bilan darslarga qatnashishini ta'minlang va texnikum ma'muriyati hamda guruh rahbari bilan bog'laning.</p>
+    <p class="sign">Guruh rahbari / Texnikum ma'muriyati: ______________________ &nbsp;&nbsp; Sana: ____________</p>`;
 }
 
 export default function WarningLetter({ w }: { w: StudentWarning }) {
