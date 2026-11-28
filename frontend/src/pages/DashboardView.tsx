@@ -203,6 +203,10 @@ export default function DashboardView({
 
   const canShowGroups = propShowGroups !== undefined ? propShowGroups : user?.role !== 'group_leader';
   const totalGroups = groups.data?.length ?? 0;
+  const totalStudents = useMemo(
+    () => (groups.data ?? []).reduce((acc, g) => acc + Math.max(0, Number(g.student_count ?? 0)), 0),
+    [groups.data]
+  );
   const groupNameById = new Map((groups.data ?? []).map((g) => [g.id, g.name]));
   const groupStudentsById = new Map((groups.data ?? []).map((g) => [g.id, Number(g.student_count ?? 0)]));
   const leaderGroupName = effectiveGroupId ? groupNameById.get(effectiveGroupId) : undefined;
@@ -373,7 +377,7 @@ export default function DashboardView({
         title={resolvedTitle}
         subtitle={`Bugun: ${formatDate(today)}${leaderGroupName ? ` · ${leaderGroupName}` : ''}`}
         actions={
-          <Link to={`${resolvedBase}/attendance`}>
+          <Link to="/davomat-belgilash">
             <Button>
               <Icon name="check" /> Davomat belgilash
             </Button>
@@ -388,12 +392,25 @@ export default function DashboardView({
         <>
           <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {canShowGroups && (
-              <StatCard
-                label="Guruhlar"
-                value={totalGroups}
-                icon={<Icon name="groups" />}
-                tone="blue"
-              />
+              <Link to="/guruhlar" className="block transition-transform hover:scale-[1.01]">
+                <StatCard
+                  label="Guruhlar"
+                  value={totalGroups}
+                  icon={<Icon name="groups" />}
+                  tone="blue"
+                />
+              </Link>
+            )}
+            {canShowGroups && (
+              <Link to="/oquvchilar" className="block transition-transform hover:scale-[1.01]">
+                <StatCard
+                  label="Barcha o'quvchilar"
+                  value={totalStudents}
+                  sub="o'quvchilar ro'yxatini ochish"
+                  icon={<Icon name="groups" />}
+                  tone="blue"
+                />
+              </Link>
             )}
             <StatCard
               label="Bugun keldi"
