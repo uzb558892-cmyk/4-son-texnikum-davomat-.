@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import { Field, Input } from '../components/Fields';
@@ -135,9 +135,18 @@ export default function Login() {
             {busy ? 'Kirilmoqda...' : 'Kirish'}
           </Button>
 
-          <p className="border-t border-slate-100 pt-4 text-center text-xs text-slate-400">
-            Parolni unutgan bo&apos;lsangiz, texnikum administratoriga murojaat qiling.
-          </p>
+          <div className="space-y-2 border-t border-slate-100 pt-4 text-center text-xs text-slate-400">
+            <p>Parolni unutgan bo&apos;lsangiz, texnikum administratoriga murojaat qiling.</p>
+            <div className="flex items-center justify-center gap-4 text-slate-500">
+              <Link to="/maxfiylik-siyosati" className="hover:text-slate-900 underline">
+                Maxfiylik siyosati
+              </Link>
+              <span>•</span>
+              <Link to="/foydalanish-shartlari" className="hover:text-slate-900 underline">
+                Foydalanish shartlari
+              </Link>
+            </div>
+          </div>
         </form>
       </div>
     </div>

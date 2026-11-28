@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /login
+Allow: /ota-ona
+Allow: /maxfiylik-siyosati
+Allow: /foydalanish-shartlari
+Disallow: /admin
+Disallow: /foydalanuvchilar
+Disallow: /sozlamalar
+
+Sitemap: https://4-son-texnikum-davomat.vercel.app/sitemap.xml

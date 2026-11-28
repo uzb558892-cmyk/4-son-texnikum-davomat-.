@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon';
 import { useAuth } from '../context/AuthContext';
 import { useAsync } from '../hooks/useAsync';
@@ -161,6 +161,17 @@ export default function AppLayout() {
             <div className="mx-auto max-w-[1440px]">
               <Outlet />
             </div>
+            <footer className="mx-auto mt-10 flex max-w-[1440px] flex-wrap items-center justify-between gap-2 border-t border-slate-200/80 pt-4 text-xs text-slate-400">
+              <span>4-son Texnikum Davomat</span>
+              <div className="flex items-center gap-4">
+                <Link to="/maxfiylik-siyosati" className="hover:text-slate-700 underline">
+                  Maxfiylik siyosati
+                </Link>
+                <Link to="/foydalanish-shartlari" className="hover:text-slate-700 underline">
+                  Foydalanish shartlari
+                </Link>
+              </div>
+            </footer>
           </main>
         </div>
       </div>

@@ -88,21 +88,21 @@ async function showGroupsMenu(chatId: number, messageId?: number) {
     rows.push(chunk);
   }
 
-  const text = `<b>Guruhni tanlang</b> (Sana: <code>${tashkentToday()}</code>):`;
+  const text = `📊 <b>Guruhni tanlang</b> (Sana: <code>${tashkentToday()}</code>):`;
   const markup = { inline_keyboard: rows };
 
   if (messageId) await editText(chatId, messageId, text, markup);
   else await sendText(chatId, text, markup);
 }
 
-async function showGroupStudents(chatId: number, groupId: string, messageId?: number) {
+async function showGroupReport(chatId: number, groupId: string, messageId?: number) {
   const date = tashkentToday();
   const [{ data: group }, { data: students }, { data: existing }] = await Promise.all([
     adminDb.from('groups').select('id, name').eq('id', groupId).maybeSingle(),
     adminDb.from('students').select('id, full_name').eq('group_id', groupId).order('full_name'),
     adminDb
       .from('attendance')
-      .select('student_id, status')
+      .select('student_id, status, note')
       .eq('group_id', groupId)
       .eq('lesson_date', date)
       .eq('para', 1)
@@ -113,48 +113,58 @@ async function showGroupStudents(chatId: number, groupId: string, messageId?: nu
     return;
   }
 
-  const statusMap = new Map<string, string>();
+  const statusMap = new Map<string, { status: string; note?: string | null }>();
   for (const r of existing ?? []) {
-    statusMap.set(r.student_id, r.status);
+    statusMap.set(r.student_id, { status: r.status, note: r.note });
   }
 
-  const labelFor = (st?: string) => {
-    if (st === 'excused_absent') return 'Sababli';
-    if (st === 'unexcused_absent') return 'Sababsiz';
-    if (st === 'escaped') return 'Qochdi';
-    if (st === 'present') return 'Keldi';
-    return 'Belgilanmagan';
+  const present: string[] = [];
+  const excused: string[] = [];
+  const unexcused: string[] = [];
+  const escaped: string[] = [];
+  const unmarked: string[] = [];
+
+  for (const s of students ?? []) {
+    const rec = statusMap.get(s.id);
+    const noteText = rec?.note ? ` (${rec.note})` : '';
+    if (!rec) unmarked.push(s.full_name);
+    else if (rec.status === 'present') present.push(s.full_name);
+    else if (rec.status === 'excused_absent') excused.push(`${s.full_name}${noteText}`);
+    else if (rec.status === 'unexcused_absent') unexcused.push(`${s.full_name}${noteText}`);
+    else if (rec.status === 'escaped') escaped.push(`${s.full_name}${noteText}`);
+    else unmarked.push(s.full_name);
+  }
+
+  const formatSection = (title: string, items: string[]) => {
+    if (!items.length) return `${title} (0 ta):\n— Yo'q`;
+    return `${title} (${items.length} ta):\n` + items.map((name, i) => `${i + 1}. ${name}`).join('\n');
   };
 
-  const lines = (students ?? []).map(
-    (s, idx) => `${idx + 1}. <b>${s.full_name}</b> — <i>${labelFor(statusMap.get(s.id))}</i>`
-  );
+  const total = students?.length ?? 0;
+  let text =
+    `📋 <b>${group.name} — Davomat hisoboti</b>\n` +
+    `📅 Sana: <code>${date}</code>\n` +
+    `👥 Jami: <b>${total}</b> | ✅ <b>${present.length}</b> | 🟡 <b>${excused.length}</b> | 🔴 <b>${unexcused.length}</b>` +
+    (escaped.length ? ` | 🟠 <b>${escaped.length}</b>` : '') +
+    `\n\n` +
+    `${formatSection('🟡 <b>Sabablilar</b>', excused)}\n\n` +
+    `${formatSection('🔴 <b>Sababsizlar</b>', unexcused)}\n\n` +
+    (escaped.length ? `${formatSection('🟠 <b>Qochganlar</b>', escaped)}\n\n` : '') +
+    `${formatSection('✅ <b>Keldilar</b>', present)}`;
 
-  const keyboard: Array<Array<{ text: string; callback_data: string }>> = [
-    [
-      { text: '✅ Hammasi keldi', callback_data: `all_present:${groupId}` },
-      { text: '🔄 Yangilash', callback_data: `grp:${groupId}` }
-    ]
-  ];
-
-  for (const s of (students ?? []).slice(0, 35)) {
-    const shortName = s.full_name.split(' ').slice(0, 2).join(' ');
-    keyboard.push([
-      { text: `✓ ${shortName}`, callback_data: `mark:${groupId}:${s.id}:present` },
-      { text: 'Sababli', callback_data: `mark:${groupId}:${s.id}:excused_absent` },
-      { text: 'Sababsiz', callback_data: `mark:${groupId}:${s.id}:unexcused_absent` },
-      { text: 'Qochdi', callback_data: `mark:${groupId}:${s.id}:escaped` }
-    ]);
+  if (unmarked.length) {
+    text += `\n\n⚪️ <b>Belgilanmaganlar</b> (${unmarked.length} ta):\n` + unmarked.map((n, i) => `${i + 1}. ${n}`).join('\n');
   }
 
-  keyboard.push([{ text: '⬅️ Guruhlarga qaytish', callback_data: 'back_groups' }]);
+  const markup = {
+    inline_keyboard: [
+      [
+        { text: '🔄 Yangilash', callback_data: `grp:${groupId}` },
+        { text: '⬅️ Guruhlarga qaytish', callback_data: 'back_groups' }
+      ]
+    ]
+  };
 
-  const text =
-    `<b>${group.name}</b> (${date})\n` +
-    `Jami o'quvchilar: <b>${students?.length ?? 0}</b> ta\n\n` +
-    (lines.length ? lines.join('\n') : "O'quvchilar ro'yxati bo'sh.");
-
-  const markup = { inline_keyboard: keyboard };
   if (messageId) await editText(chatId, messageId, text, markup);
   else await sendText(chatId, text, markup);
 }
@@ -174,11 +184,11 @@ Deno.serve(async (req) => {
       if (text === '/start' || text === '/help') {
         await sendText(
           chatId,
-          "Assalomu alaykum! <b>4-son Texnikum Davomat</b> botiga xush kelibsiz.\n\n" +
+          "Assalomu alaykum! <b>4-son Texnikum Davomat</b> hisobot botiga xush kelibsiz.\n\n" +
             "Tizimga kirish uchun:\n" +
             "<code>/login email@example.com parolingiz</code>\n\n" +
             "Kirgandan so'ng:\n" +
-            "/groups — guruhlarni ko'rish va davomat olish\n" +
+            "/groups — guruhlar davomatini ko'rish\n" +
             "/logout — hisobdan chiqish"
         );
         return new Response('OK', { status: 200 });
@@ -219,9 +229,8 @@ Deno.serve(async (req) => {
         await upsertSession(chatId, { user_id: profile.id });
         await sendText(
           chatId,
-          `✅ Xush kelibsiz, <b>${profile.full_name}</b> (${profile.role})!`
+          `✅ Xush kelibsiz, <b>${profile.full_name}</b>!\nGuruhlarni ko'rish uchun: /groups`
         );
-        await showGroupsMenu(chatId);
         return new Response('OK', { status: 200 });
       }
 
@@ -242,7 +251,7 @@ Deno.serve(async (req) => {
         return new Response('OK', { status: 200 });
       }
 
-      await sendText(chatId, "Guruhlarni ochish uchun <code>/groups</code> buyrug'ini yuboring.");
+      await sendText(chatId, "Guruhlarni ko'rish uchun <code>/groups</code> buyrug'ini yuboring.");
       return new Response('OK', { status: 200 });
     }
 
@@ -268,11 +277,10 @@ Deno.serve(async (req) => {
         .eq('id', session.user_id)
         .maybeSingle();
 
-      const allowedRoles = ['admin', 'navbatchi', 'group_leader'];
-      if (!profile?.is_active || !allowedRoles.includes(profile.role)) {
+      if (!profile?.is_active) {
         await tg('answerCallbackQuery', {
           callback_query_id: cq.id,
-          text: "Davomat belgilash huquqi yo'q.",
+          text: "Hisob faol emas.",
           show_alert: true
         });
         return new Response('OK', { status: 200 });
@@ -288,57 +296,7 @@ Deno.serve(async (req) => {
         const groupId = data.slice(4);
         await upsertSession(chatId, { selected_group_id: groupId });
         await tg('answerCallbackQuery', { callback_query_id: cq.id });
-        await showGroupStudents(chatId, groupId, messageId);
-        return new Response('OK', { status: 200 });
-      }
-
-      if (data.startsWith('all_present:')) {
-        const groupId = data.slice('all_present:'.length);
-        const date = tashkentToday();
-        const { data: students } = await adminDb
-          .from('students')
-          .select('id')
-          .eq('group_id', groupId);
-
-        const records = (students ?? []).map((s) => ({
-          student_id: s.id,
-          status: 'present',
-          note: null
-        }));
-
-        if (records.length) {
-          await adminDb.rpc('mark_attendance_bulk', {
-            p_group_id: groupId,
-            p_lesson_date: date,
-            p_para: 1,
-            p_records: records
-          });
-        }
-
-        await tg('answerCallbackQuery', {
-          callback_query_id: cq.id,
-          text: 'Hammasi keldi deb saqlandi!'
-        });
-        await showGroupStudents(chatId, groupId, messageId);
-        return new Response('OK', { status: 200 });
-      }
-
-      if (data.startsWith('mark:')) {
-        const [, groupId, studentId, status] = data.split(':');
-        const date = tashkentToday();
-
-        await adminDb.rpc('mark_attendance_bulk', {
-          p_group_id: groupId,
-          p_lesson_date: date,
-          p_para: 1,
-          p_records: [{ student_id: studentId, status, note: null }]
-        });
-
-        await tg('answerCallbackQuery', {
-          callback_query_id: cq.id,
-          text: 'Saqlandi!'
-        });
-        await showGroupStudents(chatId, groupId, messageId);
+        await showGroupReport(chatId, groupId, messageId);
         return new Response('OK', { status: 200 });
       }
     }
