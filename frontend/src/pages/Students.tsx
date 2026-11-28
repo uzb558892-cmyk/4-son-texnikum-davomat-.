@@ -11,6 +11,11 @@ import Modal from '../components/Modal';
 import ParentCodesModal from '../components/ParentCodesModal';
 import { ErrorBox, Toast } from '../components/Feedback';
 import { errorMessage } from '../utils/format';
+import {
+  exportStudentsToExcel,
+  exportStudentsToPdf,
+  exportStudentsToWord
+} from '../utils/exportStudents';
 import type { Student } from '../types';
 
 export default function Students() {
@@ -56,7 +61,7 @@ export default function Students() {
     );
   }, [enriched, dq]);
 
-  const selectedGroupName = groupId ? groupNameById.get(groupId) : 'Barcha guruhlar';
+  const selectedGroupName = groupId ? (groupNameById.get(groupId) ?? 'Tanlangan guruh') : 'Barcha guruhlar';
 
   async function save() {
     if (!edit?.full_name || !edit.group_id) return;
@@ -155,6 +160,33 @@ export default function Students() {
         subtitle={`${selectedGroupName} · ${rows.length} ta o'quvchi`}
         actions={
           <>
+            <Button
+              variant="secondary"
+              disabled={!rows.length}
+              onClick={() => {
+                exportStudentsToExcel(rows, selectedGroupName);
+                notify('Excel fayl yuklandi');
+              }}
+            >
+              Excel
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={!rows.length}
+              onClick={() => {
+                exportStudentsToWord(rows, selectedGroupName);
+                notify('Word fayl yuklandi');
+              }}
+            >
+              Word
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={!rows.length}
+              onClick={() => exportStudentsToPdf(rows, selectedGroupName)}
+            >
+              PDF
+            </Button>
             {canCodes && (
               <Button variant="secondary" onClick={() => setShowCodes(true)}>
                 Ota-ona kodlari
