@@ -32,10 +32,31 @@ export default function Students() {
     setTimeout(() => setToast(null), 2500);
   };
 
-  const rows = useMemo(
-    () => (students.data ?? []).filter((s) => s.full_name.toLowerCase().includes(dq.toLowerCase())),
-    [students.data, dq]
+  const groupNameById = useMemo(
+    () => new Map((groups.data ?? []).map((g) => [g.id, g.name])),
+    [groups.data]
   );
+
+  const enriched = useMemo(
+    () =>
+      (students.data ?? []).map((s) => ({
+        ...s,
+        group_name: s.group_name || groupNameById.get(s.group_id) || '—'
+      })),
+    [students.data, groupNameById]
+  );
+
+  const rows = useMemo(() => {
+    const query = dq.trim().toLowerCase();
+    if (!query) return enriched;
+    return enriched.filter(
+      (s) =>
+        s.full_name.toLowerCase().includes(query) ||
+        (s.group_name ?? '').toLowerCase().includes(query)
+    );
+  }, [enriched, dq]);
+
+  const selectedGroupName = groupId ? groupNameById.get(groupId) : 'Barcha guruhlar';
 
   async function save() {
     if (!edit?.full_name || !edit.group_id) return;
@@ -131,20 +152,9 @@ export default function Students() {
     <>
       <PageHeader
         title="O'quvchilar"
-        subtitle={`Jami: ${rows.length} ta`}
+        subtitle={`${selectedGroupName} · ${rows.length} ta o'quvchi`}
         actions={
           <>
-            <SearchInput value={q} onChange={setQ} placeholder="F.I.Sh. bo'yicha qidirish..." />
-            {seeAll && (
-              <Select aria-label="Guruh" value={groupId} onChange={(e) => setGroupId(e.target.value)} className="sm:w-44">
-                <option value="">Barcha guruhlar</option>
-                {(groups.data ?? []).map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </Select>
-            )}
             {canCodes && (
               <Button variant="secondary" onClick={() => setShowCodes(true)}>
                 Ota-ona kodlari
@@ -158,6 +168,42 @@ export default function Students() {
           </>
         }
       />
+
+      <div className="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+        {seeAll && (
+          <Field label="Guruh bo'yicha filtr">
+            <Select aria-label="Guruh" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+              <option value="">Barcha guruhlar</option>
+              {(groups.data ?? []).map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
+        <Field label="F.I.Sh. yoki guruh bo'yicha qidirish">
+          <SearchInput value={q} onChange={setQ} placeholder="Ism-familiya yoki guruh..." />
+        </Field>
+        <div className="flex items-end justify-between gap-2 text-xs text-slate-500">
+          <span>
+            Ko&apos;rsatilmoqda: <strong className="text-slate-800">{rows.length}</strong> /{' '}
+            <strong className="text-slate-800">{enriched.length}</strong>
+          </span>
+          {(groupId || q) && (
+            <Button
+              variant="ghost"
+              className="px-2.5 py-1 text-xs"
+              onClick={() => {
+                if (seeAll) setGroupId('');
+                setQ('');
+              }}
+            >
+              Filtrni tozalash
+            </Button>
+          )}
+        </div>
+      </div>
 
       {students.error && <ErrorBox message={students.error} onRetry={students.reload} />}
 
