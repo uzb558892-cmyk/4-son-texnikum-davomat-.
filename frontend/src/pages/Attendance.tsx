@@ -18,6 +18,7 @@ const BOX = 'mb-4 rounded-2xl border px-4 py-3 text-sm font-medium shadow-2xs';
 export default function Attendance() {
   const { user } = useAuth();
   const role = user?.role;
+  const isAdmin = role === 'admin';
   const seeAll = role !== 'group_leader';
   const isDuty = role === 'navbatchi';
   const [date, setDate] = useState(isDuty ? todayTashkent() : todayISO());
@@ -30,10 +31,24 @@ export default function Attendance() {
   const notify = (m: string, t: 'ok' | 'err' = 'ok') => { setToast({ m, t }); setTimeout(() => setToast(null), 2500); };
 
   const groups = useAsync(() => groupsService.list(), []);
-  useEffect(() => { if (!groupId && groups.data?.length) setGroupId(groups.data[0].id); }, [groups.data, groupId]);
+  const locks = useAsync(() => attendanceService.getGroupLocks(date), [date]);
+
+  useEffect(() => {
+    if (!groupId && groups.data?.length) {
+      const firstOpen = groups.data.find((g) => {
+        const lk = (locks.data ?? {})[g.id];
+        return !lk || lk.markedBy === user?.id;
+      });
+      setGroupId((firstOpen ?? groups.data[0]).id);
+    }
+  }, [groups.data, locks.data, groupId, user?.id]);
+
+  const currentLock = groupId ? (locks.data ?? {})[groupId] : undefined;
+  const lockedByOther = !isAdmin && !!currentLock && !!user && currentLock.markedBy !== user.id;
 
   const meOnDuty = !!user && getRecurringDutiesForDate(todayTashkent()).some((r) => r.duty_user_id === user.id);
-  const canEdit = role === 'admin' || role === 'group_leader' || (isDuty && meOnDuty);
+  const baseCanEdit = isAdmin || role === 'group_leader' || (isDuty && meOnDuty);
+  const canEdit = baseCanEdit && !lockedByOther;
 
   const students = useAsync(() => (groupId ? studentsService.list(groupId) : Promise.resolve([])), [groupId]);
   const existing = useAsync(() => (groupId ? attendanceService.get(groupId, date, lesson) : Promise.resolve([])), [groupId, date, lesson]);
@@ -64,9 +79,17 @@ export default function Attendance() {
     }));
     if (!rows.length) return;
     setSaving(true);
-    try { await attendanceService.save(rows); notify('Davomat saqlandi'); existing.reload(); }
-    catch (e) { notify(errorMessage(e), 'err'); }
-    finally { setSaving(false); }
+    try {
+      await attendanceService.save(rows);
+      notify('Davomat saqlandi');
+      existing.reload();
+      locks.reload();
+    } catch (e) {
+      notify(errorMessage(e), 'err');
+      locks.reload();
+    } finally {
+      setSaving(false);
+    }
   }
 
   const visibleStatuses = role === 'group_leader' ? STATUS_ORDER.filter((st) => st !== 'present' && st !== 'skipped') : STATUS_ORDER;
@@ -79,13 +102,26 @@ export default function Attendance() {
       {dutyReady && (meOnDuty
         ? <div className={`${BOX} border-emerald-200 bg-emerald-50/90 text-emerald-800`}>Bugun sizning navbatchilik kuningiz. Davomat belgilashingiz mumkin.</div>
         : <div className={`${BOX} border-amber-200 bg-amber-50/90 text-amber-900`}>Bugun sizning navbatchilik kuningiz emas. Davomatni faqat ko'rishingiz mumkin.</div>)}
+      {lockedByOther && (
+        <div className={`${BOX} border-rose-200 bg-rose-50/95 text-rose-800`}>
+          Bu guruhning davomati allaqachon <strong>{currentLock?.markedByName}</strong> tomonidan olingan. Boshqa navbatchi o&apos;zgartira olmaydi — boshqa guruhni tanlang.
+        </div>
+      )}
       {(role === 'manaviyatchi' || role === 'direktor') && <div className={`${BOX} border-indigo-200/80 bg-indigo-50/50 text-slate-700`}>Siz davomatni faqat ko'ra olasiz.</div>}
 
       <div className="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
         <Field label="Sana"><Input type="date" value={date} disabled={isDuty} onChange={(e) => e.target.value && setDate(e.target.value)} /></Field>
         <Field label="Guruh">
           <Select value={groupId} disabled={!seeAll} onChange={(e) => setGroupId(e.target.value)}>
-            {(groups.data ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+            {(groups.data ?? []).map((g) => {
+              const lk = (locks.data ?? {})[g.id];
+              const suffix = lk
+                ? lk.markedBy === user?.id
+                  ? ' (Siz olgansiz)'
+                  : ` (Olingan — ${lk.markedByName})`
+                : '';
+              return <option key={g.id} value={g.id}>{g.name}{suffix}</option>;
+            })}
           </Select>
         </Field>
         <Field label="O'quvchi qidirish"><SearchInput value={q} onChange={setQ} placeholder="F.I.Sh." /></Field>
@@ -98,7 +134,7 @@ export default function Attendance() {
         <span className="tabular-nums rounded-full bg-indigo-50/80 px-2.5 py-1 font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200/70">Belgilandi: {marked} / {total}</span>
         {canEdit && (
           <div className="ml-auto flex flex-wrap gap-2">
-            {role === 'admin' && <Button variant="secondary" onClick={allPresent} disabled={!total}>Hammasi keldi</Button>}
+            {isAdmin && <Button variant="secondary" onClick={allPresent} disabled={!total}>Hammasi keldi</Button>}
             <Button onClick={save} disabled={saving || marked === 0}>{saving ? 'Saqlanmoqda...' : 'Saqlash'}</Button>
           </div>
         )}

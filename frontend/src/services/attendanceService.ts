@@ -4,6 +4,11 @@ import { db } from './supabase';
 const toUiStatus = (s: string): AttendanceRecord['status'] =>
   s === 'excused_absent' ? 'excused' : s === 'unexcused_absent' ? 'unexcused' : s === 'escaped' ? 'skipped' : 'present';
 
+export interface GroupLockInfo {
+  markedBy: string;
+  markedByName: string;
+}
+
 export const attendanceService = {
   async get(groupId: string, date: string, lesson: number): Promise<AttendanceRecord[]> {
     const { data, error } = await db().from('attendance')
@@ -14,6 +19,23 @@ export const attendanceService = {
       id: r.id, student_id: r.student_id, group_id: r.group_id, date: r.lesson_date,
       lesson: r.para, status: toUiStatus(r.status), skip_after: r.escaped_after_para
     })) as AttendanceRecord[];
+  },
+  async getGroupLocks(date: string): Promise<Record<string, GroupLockInfo>> {
+    const { data, error } = await db().from('attendance')
+      .select('group_id, marked_by, profiles:marked_by(full_name)')
+      .eq('lesson_date', date)
+      .not('marked_by', 'is', null);
+    if (error) throw error;
+    const map: Record<string, GroupLockInfo> = {};
+    for (const r of (data ?? []) as any[]) {
+      if (!r.group_id || !r.marked_by || map[r.group_id]) continue;
+      const prof = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+      map[r.group_id] = {
+        markedBy: r.marked_by,
+        markedByName: prof?.full_name ?? 'Boshqa navbatchi'
+      };
+    }
+    return map;
   },
   async save(rows: AttendanceRecord[]): Promise<void> {
     const batches = new Map<number, Array<{ student_id: string; status: string; note: null }>>();
