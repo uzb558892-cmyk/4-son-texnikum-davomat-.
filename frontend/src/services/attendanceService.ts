@@ -1,5 +1,6 @@
 import type { AttendanceRecord } from '../types';
 import { db } from './supabase';
+import { invalidateDashboardCache } from './dashboardService';
 
 const toUiStatus = (s: string): AttendanceRecord['status'] =>
   s === 'excused_absent' ? 'excused' : s === 'unexcused_absent' ? 'unexcused' : s === 'escaped' ? 'skipped' : 'present';
@@ -7,6 +8,14 @@ const toUiStatus = (s: string): AttendanceRecord['status'] =>
 export interface GroupLockInfo {
   markedBy: string;
   markedByName: string;
+}
+
+const LOCK_TTL_MS = 20_000;
+const lockCache = new Map<string, { at: number; data: Record<string, GroupLockInfo> }>();
+
+export function invalidateLocksCache(date?: string): void {
+  if (date) lockCache.delete(date);
+  else lockCache.clear();
 }
 
 export const attendanceService = {
@@ -20,7 +29,12 @@ export const attendanceService = {
       lesson: r.para, status: toUiStatus(r.status), skip_after: r.escaped_after_para
     })) as AttendanceRecord[];
   },
-  async getGroupLocks(date: string): Promise<Record<string, GroupLockInfo>> {
+  async getGroupLocks(date: string, force = false): Promise<Record<string, GroupLockInfo>> {
+    const now = Date.now();
+    const hit = lockCache.get(date);
+    if (!force && hit && now - hit.at < LOCK_TTL_MS) {
+      return hit.data;
+    }
     const { data, error } = await db().from('attendance')
       .select('group_id, marked_by, profiles:marked_by(full_name)')
       .eq('lesson_date', date)
@@ -35,6 +49,7 @@ export const attendanceService = {
         markedByName: prof?.full_name ?? 'Boshqa navbatchi'
       };
     }
+    lockCache.set(date, { at: Date.now(), data: map });
     return map;
   },
   async save(rows: AttendanceRecord[]): Promise<void> {
@@ -55,5 +70,7 @@ export const attendanceService = {
       });
       if (error) throw error;
     }
+    if (rows[0]?.date) invalidateLocksCache(rows[0].date);
+    invalidateDashboardCache();
   }
 };
