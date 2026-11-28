@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { attendanceService, groupsService, studentsService } from '../services';
-import { dutyService, todayTashkent, type DutyRow } from '../services/dutyService';
-import { useAsync } from '../hooks/useAsync';
+import { getRecurringDutiesForDate, todayTashkent } from '../services/dutyService';
 import { useAuth } from '../context/AuthContext';
+import { useAsync } from '../hooks/useAsync';
 import PageHeader from '../components/PageHeader';
 import { Field, Input, Select, SearchInput } from '../components/Fields';
 import Button from '../components/Button';
@@ -30,10 +30,9 @@ export default function Attendance() {
   const notify = (m: string, t: 'ok' | 'err' = 'ok') => { setToast({ m, t }); setTimeout(() => setToast(null), 2500); };
 
   const groups = useAsync(() => groupsService.list(), []);
-  const duty = useAsync(() => (isDuty ? dutyService.list(todayTashkent().slice(0, 7)) : Promise.resolve([] as DutyRow[])), [isDuty]);
   useEffect(() => { if (!groupId && groups.data?.length) setGroupId(groups.data[0].id); }, [groups.data, groupId]);
 
-  const meOnDuty = !!user && (duty.data ?? []).some((r) => r.duty_date === todayTashkent() && r.duty_user_id === user.id);
+  const meOnDuty = !!user && getRecurringDutiesForDate(todayTashkent()).some((r) => r.duty_user_id === user.id);
   const canEdit = role === 'admin' || role === 'group_leader' || (isDuty && meOnDuty);
 
   const students = useAsync(() => (groupId ? studentsService.list(groupId) : Promise.resolve([])), [groupId]);
@@ -72,7 +71,7 @@ export default function Attendance() {
 
   const visibleStatuses = role === 'group_leader' ? STATUS_ORDER.filter((st) => st !== 'present' && st !== 'skipped') : STATUS_ORDER;
   const counts = visibleStatuses.map((s) => ({ s, n: (Object.values(marks) as Mark[]).filter((m) => m.status === s).length }));
-  const dutyReady = isDuty && !duty.loading && !duty.error;
+  const dutyReady = isDuty;
 
   return (
     <>
@@ -92,7 +91,7 @@ export default function Attendance() {
         <Field label="O'quvchi qidirish"><SearchInput value={q} onChange={setQ} placeholder="F.I.Sh." /></Field>
       </div>
 
-      {(students.error || existing.error || duty.error) && <ErrorBox message={(students.error || existing.error || duty.error) as string} onRetry={() => { students.reload(); existing.reload(); duty.reload(); }} />}
+      {(students.error || existing.error) && <ErrorBox message={(students.error || existing.error) as string} onRetry={() => { students.reload(); existing.reload(); }} />}
 
       <div className="card mb-4 flex flex-wrap items-center gap-2 px-4 py-3 text-xs">
         {counts.map(({ s, n }) => <span key={s} className={`tabular-nums rounded-full px-2.5 py-1 font-semibold ring-1 ring-inset ${STATUS_META[s].badge}`}>{STATUS_META[s].label}: {n}</span>)}

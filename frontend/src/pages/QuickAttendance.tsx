@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { attendanceService, groupsService, studentsService } from '../services';
-import { dutyService, todayTashkent, type DutyRow } from '../services/dutyService';
-import { useAsync } from '../hooks/useAsync';
+import { getRecurringDutiesForDate, todayTashkent } from '../services/dutyService';
 import { useAuth } from '../context/AuthContext';
+import { useAsync } from '../hooks/useAsync';
 import PageHeader from '../components/PageHeader';
 import { Field, Input, Select, SearchInput } from '../components/Fields';
 import Button from '../components/Button';
@@ -33,18 +33,14 @@ export default function QuickAttendance() {
   };
 
   const groups = useAsync(() => groupsService.list(), []);
-  const duty = useAsync(
-    () => (canCheckDuty ? dutyService.list(today.slice(0, 7)) : Promise.resolve([] as DutyRow[])),
-    [canCheckDuty, today]
-  );
 
   useEffect(() => {
     if (!groupId && groups.data?.length) setGroupId(groups.data[0].id);
   }, [groups.data, groupId]);
 
-  const dutyReady = isAdmin || (canCheckDuty && !duty.loading && !duty.error);
+  const dutyReady = true;
   const meOnDutyToday =
-    !!user && (duty.data ?? []).some((r) => r.duty_date === today && r.duty_user_id === user.id);
+    !!user && getRecurringDutiesForDate(today).some((r) => r.duty_user_id === user.id);
   const allowed = isAdmin || (canCheckDuty && meOnDutyToday);
 
   const students = useAsync(

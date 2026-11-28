@@ -133,7 +133,7 @@ export default function DutySchedule() {
   }
 
   const subtitle = isAdmin
-    ? "Navbatchilarni kunlar bo'yicha belgilash"
+    ? "Doimiy haftalik navbatchilik jadvali (Dushanba–Shanba)"
     : isDuty
       ? 'Sizning navbatchilik kunlaringiz'
       : "Navbatchilik jadvali (faqat ko'rish)";
