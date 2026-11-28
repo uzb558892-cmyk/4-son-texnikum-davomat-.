@@ -121,7 +121,7 @@ export default function DashboardView({
     (async () => {
       try {
         const client = db();
-        let q = client.from('attendance').select('*').eq('lesson_date', today);
+        let q = client.from('attendance').select('group_id, student_id, status').eq('lesson_date', today);
         if (effectiveGroupId) q = q.eq('group_id', effectiveGroupId);
         const { data, error } = await q;
         if (error) throw error;

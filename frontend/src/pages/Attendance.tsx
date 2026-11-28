@@ -35,8 +35,9 @@ export default function Attendance() {
 
   useEffect(() => {
     if (!groupId && groups.data?.length) {
+      const lockMap = locks.data ?? {};
       const firstOpen = groups.data.find((g) => {
-        const lk = (locks.data ?? {})[g.id];
+        const lk = lockMap[g.id];
         return !lk || lk.markedBy === user?.id;
       });
       setGroupId((firstOpen ?? groups.data[0]).id);
@@ -141,7 +142,7 @@ export default function Attendance() {
       </div>
 
       <ul className="space-y-2.5">
-        {students.loading || existing.loading ? <li className="card py-10 text-center text-sm font-medium text-slate-400">Yuklanmoqda...</li> :
+        {students.loading ? <li className="card py-10 text-center text-sm font-medium text-slate-400">Yuklanmoqda...</li> :
           list.length === 0 ? <li className="card py-10 text-center text-sm font-medium text-slate-400">O'quvchilar topilmadi</li> :
           list.map((s, i) => {
             const m = marks[s.id];
