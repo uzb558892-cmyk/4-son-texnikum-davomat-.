@@ -7,7 +7,6 @@ import PageHeader from '../components/PageHeader';
 import { Field, Input, Select, SearchInput } from '../components/Fields';
 import Button from '../components/Button';
 import { ErrorBox, Toast } from '../components/Feedback';
-import { LESSONS } from '../utils/constants';
 import { cx, errorMessage } from '../utils/format';
 import type { AttendanceRecord } from '../types';
 
@@ -21,7 +20,7 @@ export default function QuickAttendance() {
   const today = todayTashkent();
 
   const [date, setDate] = useState(today);
-  const [lesson, setLesson] = useState(1);
+  const lesson = 1;
   const [groupId, setGroupId] = useState('');
   const [q, setQ] = useState('');
   const [marks, setMarks] = useState<Record<string, SimpleMark>>({});
@@ -132,7 +131,7 @@ export default function QuickAttendance() {
         subtitle="Guruhni tanlang va o'quvchilarning bor yoki yo'qligini belgilang"
       />
 
-      <div className="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
         <Field label="Sana">
           <Input
             type="date"
@@ -146,15 +145,6 @@ export default function QuickAttendance() {
             {(groups.data ?? []).map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Para">
-          <Select value={lesson} onChange={(e) => setLesson(Number(e.target.value))}>
-            {LESSONS.map((l) => (
-              <option key={l} value={l}>
-                {l}-para
               </option>
             ))}
           </Select>
